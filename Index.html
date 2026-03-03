@@ -70,6 +70,8 @@
             console.log("Firebase inicializado com sucesso");
         } catch (e) {
             console.error("Erro ao inicializar Firebase (verifique a config):", e);
+            alert("Erro de conexão com o servidor. Verifique sua internet.");
+            document.getElementById('loading-screen').classList.add('hidden'); // Remove loading em caso de erro
         }
 
         // Monitorar estado da autenticação
@@ -147,6 +149,21 @@
         <div class="w-12 h-12 border-4 border-red-700 border-t-transparent rounded-full animate-spin mb-4"></div>
         <p class="text-slate-500 text-sm font-medium">Carregando...</p>
     </div>
+    
+    <!-- FALLBACK DE SEGURANÇA: Se o Firebase demorar muito, libera a tela -->
+    <script>
+        setTimeout(() => {
+            const l = document.getElementById('loading-screen');
+            if (l && !l.classList.contains('hidden')) {
+                console.warn('Loading timeout - Forçando exibição');
+                l.classList.add('hidden');
+                // Se não estiver logado, mostra login por segurança
+                if (document.getElementById('main-app').classList.contains('hidden')) {
+                   document.getElementById('login-screen').classList.remove('hidden');
+                }
+            }
+        }, 8000); // 8 segundos
+    </script>
 
     <!-- TELA PÚBLICA DE INSCRIÇÃO (SEM LOGIN) -->
     <div id="public-inscricao" class="hidden min-h-screen bg-slate-50 flex flex-col items-center p-4">
