@@ -148,6 +148,9 @@
     <div id="loading-screen" class="fixed inset-0 bg-[#f8fafc] flex flex-col items-center justify-center z-[200]">
         <div class="w-12 h-12 border-4 border-red-700 border-t-transparent rounded-full animate-spin mb-4"></div>
         <p class="text-slate-500 text-sm font-medium">Carregando...</p>
+        <button onclick="document.getElementById('loading-screen').classList.add('hidden')" class="mt-8 px-4 py-2 text-xs text-red-500 underline">
+            Demorando muito? Toque aqui para entrar
+        </button>
     </div>
     
     <!-- FALLBACK DE SEGURANÇA: Se o Firebase demorar muito, libera a tela -->
@@ -157,12 +160,19 @@
             if (l && !l.classList.contains('hidden')) {
                 console.warn('Loading timeout - Forçando exibição');
                 l.classList.add('hidden');
-                // Se não estiver logado, mostra login por segurança
-                if (document.getElementById('main-app').classList.contains('hidden')) {
-                   document.getElementById('login-screen').classList.remove('hidden');
+                
+                // Se estiver na página pública, mostra ela, senão mostra login
+                const params = new URLSearchParams(window.location.search);
+                if (params.get('page') === 'inscricao') {
+                    document.getElementById('public-inscricao').classList.remove('hidden');
+                    document.getElementById('login-screen').classList.add('hidden');
+                } else {
+                    if (document.getElementById('main-app').classList.contains('hidden')) {
+                       document.getElementById('login-screen').classList.remove('hidden');
+                    }
                 }
             }
-        }, 8000); // 8 segundos
+        }, 3000); // 3 segundos (Reduzido para mobile)
     </script>
 
     <!-- TELA PÚBLICA DE INSCRIÇÃO (SEM LOGIN) -->
@@ -367,7 +377,7 @@
         <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 sm:p-10 relative z-10 border border-slate-100 flex flex-col items-center">
             <div class="w-full aspect-square max-w-[250px] bg-transparent flex items-center justify-center mb-6 relative">
                 <div class="absolute inset-0 bg-[#DA291C]/5 rounded-full blur-3xl transform scale-150"></div>
-                <img src="logo.png" class="w-full h-full object-contain drop-shadow-2xl relative z-10 transform hover:scale-105 transition-transform duration-500">
+                <img src="logo.png" class="w-full h-full object-contain drop-shadow-2xl relative z-10 transform hover:scale-105 transition-transform duration-500" loading="lazy" onerror="this.src='https://placehold.co/200x200?text=Logo'">
             </div>
             
             <p class="text-slate-500 text-sm font-bold uppercase tracking-[0.2em] mb-8 text-center border-b-2 border-[#DA291C] pb-2">Gestão de Academia</p>
@@ -399,7 +409,7 @@
     </div>
 
     <!-- ESTRUTURA PRINCIPAL -->
-    <div id="main-app" class="hidden h-screen-safe overflow-hidden flex flex-col md:flex-row">
+    <div id="main-app" class="hidden h-screen-safe flex flex-col md:flex-row">
         
         <!-- SIDEBAR DESKTOP -->
         <aside id="sidebar" class="flex flex-col w-72 bg-slate-900 text-slate-300 flex-shrink-0 z-50 transition-all relative no-print h-full
