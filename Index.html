@@ -87,7 +87,9 @@
                     // Verifica URL para redirecionamento direto (ex: link de inscrição)
                     const params = new URLSearchParams(window.location.search);
                     if (params.get('page') === 'inscricao') {
-                        navigate('inscricoes');
+                        document.getElementById('login-screen').classList.add('hidden');
+                        document.getElementById('main-app').classList.add('hidden');
+                        document.getElementById('public-inscricao').classList.remove('hidden');
                     } else {
                         navigate('dashboard');
                         window.loadPlayersFromFirebase(); 
@@ -453,6 +455,22 @@
                         <h2 class="text-2xl font-black text-slate-900">Solicitações de Inscrição</h2>
                         <p class="text-slate-500 text-sm">Aprove ou edite as pré-inscrições recebidas pelo site.</p>
                     </div>
+                    
+                    <!-- Card Link de Inscrição (SEMPRE VISÍVEL) -->
+                    <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-indigo-100 rounded-lg text-indigo-600"><i data-lucide="link" class="w-5 h-5"></i></div>
+                            <div>
+                                <h3 class="font-bold text-indigo-900 text-sm uppercase">Link Público de Inscrição</h3>
+                                <p class="text-xs text-indigo-600">Compartilhe este link para novos alunos.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 w-full sm:w-auto bg-white px-3 py-2 rounded-xl border border-indigo-100 cursor-pointer hover:bg-indigo-50 transition-colors" onclick="navigator.clipboard.writeText(window.location.href.split('?')[0] + '?page=inscricao'); alert('Link copiado!')">
+                            <code class="text-xs font-mono text-indigo-500 truncate max-w-[200px] sm:max-w-none">.../?page=inscricao</code>
+                            <i data-lucide="copy" class="w-4 h-4 text-indigo-400"></i>
+                        </div>
+                    </div>
+
                     <div id="inscricoes-list" class="space-y-4"></div>
                 </div>
 
@@ -969,11 +987,7 @@
                 list.innerHTML = `<div class="p-12 text-center bg-white rounded-3xl border border-slate-200">
                     <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400"><i data-lucide="inbox" class="w-8 h-8"></i></div>
                     <h3 class="font-bold text-slate-800">Nenhuma solicitação pendente</h3>
-                    <p class="text-sm text-slate-500">Divulgue o link de inscrição para receber novos atletas.</p>
-                    <div class="mt-4 p-3 bg-slate-50 rounded-xl inline-flex items-center gap-2 border border-slate-200 text-xs font-mono text-slate-600 select-all cursor-pointer" onclick="navigator.clipboard.writeText(window.location.href.split('?')[0] + '?page=inscricao'); alert('Link copiado!')">
-                        <i data-lucide="link" class="w-4 h-4"></i>
-                        ${window.location.href.split('?')[0]}?page=inscricao
-                    </div>
+                    <p class="text-sm text-slate-500">Novas inscrições aparecerão aqui.</p>
                 </div>`;
                 return;
             }
