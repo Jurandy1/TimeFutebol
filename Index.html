@@ -942,7 +942,7 @@
                 
                 // Salva no cache
                 sessionStorage.setItem('cachedPlayers', JSON.stringify(allData));
-                sessionStorage.setItem('lastLoad', now);
+                sessionStorage.setItem('lastLoad', Date.now());
 
                 updateBadges();
                 renderDashboard();
