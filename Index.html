@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistema de Time | Gestão de Academia</title>
+    <title>MANCHESTER BRASIL | Gestão de Academia</title>
     
     <!-- Tratamento de Erro Global -->
     <script>
@@ -27,13 +27,17 @@
     </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Bibliotecas para Relatórios (PDF e Excel) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <!-- FIREBASE SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // CONFIGURAÇÃO DO FIREBASE - SUBSTITUA COM SEUS DADOS
         const firebaseConfig = {
@@ -58,6 +62,8 @@
             window.collection = collection;
             window.addDoc = addDoc;
             window.getDocs = getDocs;
+            window.doc = doc;
+            window.updateDoc = updateDoc;
             window.query = query;
             window.orderBy = orderBy;
             window.limit = limit;
@@ -74,12 +80,26 @@
                     document.getElementById('login-screen').classList.add('hidden');
                     document.getElementById('main-app').classList.remove('hidden');
                     window.updateVH();
-                    window.navigate('dashboard');
-                    window.loadPlayersFromFirebase(); // Carregar dados reais
+                    
+                    // Verifica URL para redirecionamento direto (ex: link de inscrição)
+                    const params = new URLSearchParams(window.location.search);
+                    if (params.get('page') === 'inscricao') {
+                        navigate('inscricao');
+                    } else {
+                        navigate('dashboard');
+                        window.loadPlayersFromFirebase(); 
+                    }
                 } else {
                     console.log("Nenhum usuário logado");
-                    document.getElementById('login-screen').classList.remove('hidden');
-                    document.getElementById('main-app').classList.add('hidden');
+                    // Se estiver na página pública de inscrição, não pede login
+                    const params = new URLSearchParams(window.location.search);
+                    if (params.get('page') === 'inscricao') {
+                        document.getElementById('login-screen').classList.add('hidden');
+                        document.getElementById('public-inscricao').classList.remove('hidden');
+                    } else {
+                        document.getElementById('login-screen').classList.remove('hidden');
+                        document.getElementById('main-app').classList.add('hidden');
+                    }
                 }
             });
         }
@@ -91,36 +111,233 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #059669; border-radius: 10px; }
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .active-nav { background: #064e3b; border-left: 4px solid #f59e0b; color: white !important; }
+        /* Cores do Manchester United: Vermelho (#DA291C), Preto, Amarelo/Dourado (#FBE122) */
+        .active-nav { background: #b91c1c; border-left: 4px solid #facc15; color: white !important; }
         .card-player { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .card-player:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
         .view-section { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .h-screen-safe { height: 100vh; height: calc(var(--vh, 1vh) * 100); }
+        
+        /* OTIMIZAÇÃO PARA IMPRESSÃO A4 */
         @media print {
+            @page { size: A4 landscape; margin: 1cm; }
+            body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .no-print { display: none !important; }
             .print-only { display: block !important; }
-            body { background: white; }
+            .print-break-inside-avoid { break-inside: avoid; }
+            table { font-size: 10px; width: 100%; }
+            th, td { padding: 4px 8px !important; }
+            #sidebar, #login-screen { display: none; }
+            #main-app { height: auto; overflow: visible; }
+            #content-area { padding: 0; overflow: visible; }
+            .bg-slate-50 { background-color: white !important; }
         }
     </style>
 </head>
 <body class="bg-[#f8fafc] text-slate-900 overflow-hidden">
 
+    <!-- TELA PÚBLICA DE INSCRIÇÃO (SEM LOGIN) -->
+    <div id="public-inscricao" class="hidden min-h-screen bg-slate-50 flex flex-col items-center p-4">
+        <div class="w-full max-w-3xl bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden my-8">
+            <div class="bg-[#DA291C] p-8 text-center relative overflow-hidden flex flex-col items-center">
+                <div class="absolute inset-0 opacity-10 flex items-center justify-center">
+                    <img src="logo.png" class="w-full h-full object-cover opacity-20 blur-sm">
+                </div>
+                <!-- LOGO RESPONSIVA -->
+                <div class="w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-4 backdrop-blur-sm border border-white/20 shadow-2xl relative z-10 p-4 transition-all duration-500">
+                    <img src="logo.png" class="w-full h-full object-contain drop-shadow-xl">
+                </div>
+                <!-- <h1 class="text-3xl font-black text-white relative z-10 tracking-tighter drop-shadow-md">MANCHESTER <span class="text-yellow-400">BRASIL</span></h1> -->
+                <p class="text-white/90 text-lg sm:text-xl mt-4 font-black uppercase tracking-widest drop-shadow-md">Ficha de Pré-Inscrição</p>
+            </div>
+            <div class="p-8">
+                <form id="public-form" class="space-y-6">
+                    <div class="bg-red-50 p-4 rounded-xl border border-red-100 flex items-start gap-3">
+                        <i data-lucide="info" class="w-5 h-5 text-red-600 mt-0.5"></i>
+                        <p class="text-xs text-red-800">Preencha todos os campos com atenção. A diretoria revisará os dados antes da aprovação.</p>
+                    </div>
+
+                    <!-- Dados Pessoais -->
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-slate-800 text-sm uppercase border-b border-slate-100 pb-2">1. Dados do Atleta</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nome Completo</label>
+                                <input required name="nome" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-red-500/10 focus:border-red-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">CPF</label>
+                                <input required name="cpf" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" placeholder="000.000.000-00">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">RG</label>
+                                <input required name="rg" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" placeholder="00.000.000-0">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Data de Nascimento</label>
+                                <input required name="dataNascimento" type="date" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Posição Preferida</label>
+                                <select name="posicao" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none bg-white">
+                                    <option value="">Selecione...</option>
+                                    <option>Goleiro</option><option>Zagueiro</option><option>Lateral</option><option>Volante</option><option>Meia</option><option>Atacante</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Endereço -->
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-slate-800 text-sm uppercase border-b border-slate-100 pb-2">2. Endereço</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">CEP</label>
+                                <input required name="cep" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cidade</label>
+                                <input required name="cidade" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Rua / Logradouro</label>
+                                <input required name="rua" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Número</label>
+                                <input required name="endNumero" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Bairro</label>
+                                <input required name="bairro" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Escola -->
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-slate-800 text-sm uppercase border-b border-slate-100 pb-2">3. Dados Escolares</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="md:col-span-3">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nome da Escola</label>
+                                <input name="nomeEscola" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Série</label>
+                                <input name="serie" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" placeholder="Ex: 5º Ano">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Turno</label>
+                                <select name="turno" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none bg-white">
+                                    <option value="">Selecione...</option>
+                                    <option>Manhã</option><option>Tarde</option><option>Integral</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Responsáveis -->
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-slate-800 text-sm uppercase border-b border-slate-100 pb-2">4. Responsáveis</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nome da Mãe</label>
+                                <input required name="mae" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">WhatsApp Mãe</label>
+                                <input required name="foneMae" type="tel" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" placeholder="(DD) 99999-9999">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nome do Pai</label>
+                                <input name="pai" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">WhatsApp Pai</label>
+                                <input name="fonePai" type="tel" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" placeholder="(DD) 99999-9999">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Saúde -->
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-slate-800 text-sm uppercase border-b border-slate-100 pb-2">5. Saúde e Uniforme</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tipo Sanguíneo</label>
+                                <select name="tipoSanguineo" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none bg-white">
+                                    <option value="">Selecione...</option>
+                                    <option value="O+">O+</option><option value="A+">A+</option><option value="B+">B+</option><option value="AB+">AB+</option><option value="O-">O-</option><option value="A-">A-</option><option value="B-">B-</option><option value="AB-">AB-</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Plano de Saúde</label>
+                                <input name="planoSaude" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" placeholder="Ex: Unimed">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Alergias</label>
+                                <input name="alergias" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" placeholder="Digite 'Nenhuma' se não houver">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Medicamentos em Uso</label>
+                                <input name="medicamentos" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" placeholder="Digite 'Nenhum' se não houver">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Problemas de Saúde / Cirurgias</label>
+                                <textarea name="cirurgias" rows="2" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none" placeholder="Descreva brevemente..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Uniforme -->
+                        <div class="grid grid-cols-2 gap-4 pt-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tamanho Camisa</label>
+                                <select name="camisa" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none bg-white">
+                                    <option value="P">P</option><option value="M">M</option><option value="G">G</option><option value="GG">GG</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tamanho Calção</label>
+                                <select name="calcao" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none bg-white">
+                                    <option value="P">P</option><option value="M">M</option><option value="G">G</option><option value="GG">GG</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tamanho Meião</label>
+                                <select name="meiao" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none bg-white">
+                                    <option value="Infantil">Infantil</option><option value="Adulto">Adulto</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nº Calçado</label>
+                                <input name="calcado" type="number" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-[#DA291C] hover:bg-red-800 text-white font-black py-4 rounded-xl shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-2 mt-8 text-lg">
+                        <i data-lucide="send" class="w-6 h-6"></i> Enviar Inscrição
+                    </button>
+                </form>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 text-center pb-8">© 2026 Manchester Brasil - Todos os direitos reservados</p>
+    </div>
+
     <!-- TELA DE LOGIN -->
     <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 px-4 overflow-hidden">
         <div class="absolute inset-0 z-0">
-            <img src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1920&q=80" class="w-full h-full object-cover opacity-30" alt="Estádio">
-            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
+            <img src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1920&q=80" class="w-full h-full object-cover opacity-20" alt="Estádio">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#DA291C]/90 via-slate-900/80 to-transparent"></div>
         </div>
-        <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 sm:p-10 relative z-10 border border-slate-100">
-            <div class="flex flex-col items-center mb-8">
-                <div class="w-20 h-20 bg-emerald-600 rounded-2xl rotate-3 flex items-center justify-center shadow-xl shadow-emerald-600/20 mb-6">
-                    <i data-lucide="shield" class="w-10 h-10 text-white -rotate-3"></i>
-                </div>
-                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Sistema <span class="text-emerald-600 font-normal">de Time</span></h1>
-                <p class="text-slate-500 text-sm mt-1">Gestão Profissional de Categorias de Base</p>
-                <p class="text-slate-400 text-xs mt-0.5">feito por <span class="font-bold text-emerald-600">Jurandy</span></p>
+        <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 sm:p-10 relative z-10 border border-slate-100 flex flex-col items-center">
+            <div class="w-full aspect-square max-w-[250px] bg-transparent flex items-center justify-center mb-6 relative">
+                <div class="absolute inset-0 bg-[#DA291C]/5 rounded-full blur-3xl transform scale-150"></div>
+                <img src="logo.png" class="w-full h-full object-contain drop-shadow-2xl relative z-10 transform hover:scale-105 transition-transform duration-500">
             </div>
+            
+            <p class="text-slate-500 text-sm font-bold uppercase tracking-[0.2em] mb-8 text-center border-b-2 border-[#DA291C] pb-2">Gestão de Academia</p>
             <div id="login-error" class="hidden bg-rose-50 text-rose-600 p-4 rounded-xl mb-6 text-sm flex items-center gap-3 border border-rose-100">
                 <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
                 <span id="login-error-msg"></span>
@@ -140,11 +357,11 @@
                         <input type="password" id="login-pass" required class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none text-slate-700" placeholder="••••••">
                     </div>
                 </div>
-                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-emerald-600/30 transform active:scale-[0.98] mt-4 flex items-center justify-center gap-2">
+                <button type="submit" class="w-full bg-[#DA291C] hover:bg-red-800 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-red-900/30 transform active:scale-[0.98] mt-4 flex items-center justify-center gap-2">
                     Aceder ao Painel <i data-lucide="arrow-right" class="w-5 h-5"></i>
                 </button>
             </form>
-            <p class="text-center text-[10px] text-slate-400 mt-8 tracking-widest uppercase">Admin: admin | Senha: 123456</p>
+            <p class="text-center text-[10px] text-slate-400 mt-8 tracking-widest uppercase">Admin: admin@gmail.com | Senha: (Sua senha)</p>
         </div>
     </div>
 
@@ -156,16 +373,21 @@
             fixed inset-y-0 left-0 -translate-x-full md:translate-x-0 md:static md:flex transition-transform duration-300">
             <!-- Overlay para fechar no mobile -->
             <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden" onclick="closeSidebar()"></div>
-            <div class="p-8 flex items-center gap-3 border-b border-slate-800/50">
-                <div class="bg-emerald-500 p-2 rounded-lg shadow-lg shadow-emerald-500/20">
-                    <i data-lucide="shield" class="w-6 h-6 text-white"></i>
+            <div class="p-8 flex flex-col items-center gap-6 border-b border-slate-800/50 relative overflow-hidden group">
+                <div class="absolute inset-0 bg-[#DA291C]/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <div class="w-full max-w-[180px] aspect-square relative z-10 transition-transform duration-500 group-hover:scale-105">
+                    <img src="logo.png" class="w-full h-full object-contain drop-shadow-2xl">
                 </div>
-                <span class="font-bold text-xl text-white tracking-tight">Sistema <span class="text-emerald-500">de Time</span></span>
+                <!-- <span class="font-bold text-xl text-white tracking-tight">MANCHESTER <span class="text-[#DA291C]">BRASIL</span></span> -->
             </div>
             <div class="flex-1 py-6 space-y-1 overflow-y-auto px-4">
                 <p class="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Menu Principal</p>
                 <button onclick="navigate('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all active-nav">
                     <i data-lucide="layout-dashboard" class="w-5 h-5"></i> <span class="font-medium">Dashboard</span>
+                </button>
+                <button onclick="navigate('inscricoes')" id="nav-inscricoes" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800 hover:text-white mt-1 relative">
+                    <i data-lucide="inbox" class="w-5 h-5"></i> <span class="font-medium">Inscrições</span>
+                    <span id="badge-inscricoes" class="hidden absolute right-4 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center text-[10px] font-bold text-red-900">0</span>
                 </button>
                 <button onclick="navigate('atletas')" id="nav-atletas" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800 hover:text-white mt-1">
                     <i data-lucide="users" class="w-5 h-5"></i> <span class="font-medium">Elenco</span>
@@ -176,20 +398,18 @@
                 <button onclick="navigate('relatorios')" id="nav-relatorios" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800 hover:text-white mt-1">
                     <i data-lucide="file-bar-chart" class="w-5 h-5"></i> <span class="font-medium">Relatórios</span>
                 </button>
-                <button onclick="navigate('presenca')" id="nav-presenca" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800 hover:text-white mt-1">
-                    <i data-lucide="calendar-check" class="w-5 h-5"></i> <span class="font-medium">Presença</span>
-                </button>
+                <!-- Botão Presença REMOVIDO -->
             </div>
             <div class="p-4 border-t border-slate-800">
                 <div class="bg-slate-800/50 rounded-2xl p-4 mb-4">
                     <div class="flex items-center gap-3 mb-2">
-                        <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-bold text-white uppercase">AD</div>
+                        <div class="w-8 h-8 rounded-full bg-[#DA291C] flex items-center justify-center text-xs font-bold text-white uppercase border border-yellow-400">AD</div>
                         <div>
                             <p class="text-xs font-bold text-white">Administrador</p>
                             <p class="text-[10px] text-slate-500">Logado agora</p>
                         </div>
                     </div>
-                    <button onclick="logout()" class="w-full flex items-center justify-center gap-2 py-2 text-xs text-rose-400 hover:text-rose-300 transition-colors font-bold uppercase tracking-tighter">
+                    <button onclick="logout()" class="w-full flex items-center justify-center gap-2 py-2 text-xs text-red-400 hover:text-red-300 transition-colors font-bold uppercase tracking-tighter">
                         <i data-lucide="log-out" class="w-4 h-4"></i> Sair do Sistema
                     </button>
                 </div>
@@ -206,10 +426,10 @@
                     <h2 id="page-title" class="font-bold text-slate-800 text-lg hidden sm:block">Dashboard</h2>
                 </div>
                 <div class="flex items-center gap-3">
-                    <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 flex items-center gap-2">
-                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Sistema Ativo
+                    <span class="text-xs font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-full border border-red-100 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> Sistema Ativo
                     </span>
-                    <span id="test-badge" class="hidden text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">Modo Teste</span>
+                    <span id="test-badge" class="hidden text-xs font-bold text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-100">Modo Teste</span>
                 </div>
             </header>
 
@@ -217,6 +437,15 @@
                 
                 <!-- SEÇÃO: DASHBOARD -->
                 <div id="view-dashboard" class="view-section space-y-8"></div>
+
+                <!-- SEÇÃO: INSCRIÇÕES PENDENTES -->
+                <div id="view-inscricoes" class="view-section hidden space-y-6">
+                    <div class="mb-4">
+                        <h2 class="text-2xl font-black text-slate-900">Solicitações de Inscrição</h2>
+                        <p class="text-slate-500 text-sm">Aprove ou edite as pré-inscrições recebidas pelo site.</p>
+                    </div>
+                    <div id="inscricoes-list" class="space-y-4"></div>
+                </div>
 
                 <!-- SEÇÃO: LISTAGEM ATLETAS -->
                 <div id="view-atletas" class="view-section hidden space-y-6">
@@ -228,9 +457,9 @@
                         <div class="flex flex-wrap gap-2 w-full sm:w-auto">
                             <div class="relative flex-1 sm:w-64">
                                 <i data-lucide="search" class="absolute left-3 top-2.5 w-5 h-5 text-slate-400"></i>
-                                <input type="text" id="atleta-search" placeholder="Buscar por nome..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm">
+                                <input type="text" id="atleta-search" placeholder="Buscar por nome..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all text-sm">
                             </div>
-                            <select id="atleta-filter-cat" class="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:border-emerald-500 text-sm bg-white cursor-pointer">
+                            <select id="atleta-filter-cat" class="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:border-red-500 text-sm bg-white cursor-pointer">
                                 <option value="Todas">Todas</option>
                                 <option value="SUB 9">SUB 9</option><option value="SUB 11">SUB 11</option><option value="SUB 13">SUB 13</option><option value="SUB 15">SUB 15</option><option value="SUB 17">SUB 17</option>
                             </select>
@@ -250,7 +479,7 @@
                         <!-- Card: Dados Pessoais -->
                         <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                             <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
-                                <div class="p-2 bg-emerald-100 rounded-lg text-emerald-600"><i data-lucide="user" class="w-5 h-5"></i></div>
+                                <div class="p-2 bg-red-100 rounded-lg text-red-600"><i data-lucide="user" class="w-5 h-5"></i></div>
                                 <h3 class="font-bold text-slate-800 uppercase tracking-tight text-sm">Informação Pessoal & Foto</h3>
                             </div>
                             <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -266,29 +495,37 @@
                                 <div class="lg:col-span-12 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="sm:col-span-2">
                                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nome Completo do Atleta</label>
-                                        <input required name="nome" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all" placeholder="Ex: Lucas Ferreira dos Santos">
+                                        <input required name="nome" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-red-500/10 focus:border-red-500 outline-none transition-all" placeholder="Ex: Lucas Ferreira dos Santos">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">CPF</label>
+                                        <input required name="cpf" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-red-500/10 focus:border-red-500 outline-none transition-all" placeholder="000.000.000-00">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">RG</label>
+                                        <input required name="rg" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-red-500/10 focus:border-red-500 outline-none transition-all" placeholder="00.000.000-0">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Data de Nascimento</label>
-                                        <input required id="nasc-input" name="dataNascimento" type="date" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all">
+                                        <input required id="nasc-input" name="dataNascimento" type="date" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-red-500/10 focus:border-red-500 outline-none transition-all">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Categoria Prevista</label>
-                                        <div class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-emerald-600 flex justify-between items-center">
+                                        <div class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-red-600 flex justify-between items-center">
                                             <span id="cat-display">-</span>
                                             <i data-lucide="shield" class="w-4 h-4"></i>
                                         </div>
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Posição em Campo</label>
-                                        <select name="posicao" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm">
+                                        <select name="posicao" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-red-500/10 focus:border-red-500 outline-none transition-all text-sm">
                                             <option value="">Selecione...</option>
                                             <option>Goleiro</option><option>Zagueiro</option><option>Lateral Direito</option><option>Lateral Esquerdo</option><option>Volante</option><option>Meia</option><option>Atacante</option><option>Ponta Direita</option><option>Ponta Esquerda</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Número da Camisa</label>
-                                        <input name="numeroCamisa" type="number" min="1" max="99" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all" placeholder="Ex: 10">
+                                        <input name="numeroCamisa" type="number" min="1" max="99" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-red-500/10 focus:border-red-500 outline-none transition-all" placeholder="Ex: 10">
                                     </div>
                                 </div>
                             </div>
@@ -361,31 +598,31 @@
                             <!-- Kit Uniforme -->
                             <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                                 <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
-                                    <div class="p-2 bg-amber-100 rounded-lg text-amber-600"><i data-lucide="shirt" class="w-5 h-5"></i></div>
+                                    <div class="p-2 bg-yellow-100 rounded-lg text-yellow-600"><i data-lucide="shirt" class="w-5 h-5"></i></div>
                                     <h3 class="font-bold text-slate-800 uppercase tracking-tight text-sm">Kit Uniforme (Tamanhos)</h3>
                                 </div>
                                 <div class="p-6 grid grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Camisa</label>
-                                        <select name="camisa" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-amber-500 text-sm">
+                                        <select name="camisa" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-yellow-500 text-sm">
                                             <option value="PP">PP</option><option value="P" selected>P</option><option value="M">M</option><option value="G">G</option><option value="GG">GG</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Calção</label>
-                                        <select name="calcao" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-amber-500 text-sm">
+                                        <select name="calcao" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-yellow-500 text-sm">
                                             <option value="PP">PP</option><option value="P" selected>P</option><option value="M">M</option><option value="G">G</option><option value="GG">GG</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Meião</label>
-                                        <select name="meiao" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-amber-500 text-sm">
+                                        <select name="meiao" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-yellow-500 text-sm">
                                             <option value="Infantil">Infantil</option><option value="Adulto">Adulto</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Calçado (Nº)</label>
-                                        <input name="calcado" type="number" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-amber-500 text-sm" placeholder="Ex: 38">
+                                        <input name="calcado" type="number" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-yellow-500 text-sm" placeholder="Ex: 38">
                                     </div>
                                 </div>
                             </div>
@@ -393,41 +630,41 @@
                             <!-- Dados de Saúde AMPLIADO -->
                             <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                                 <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
-                                    <div class="p-2 bg-rose-100 rounded-lg text-rose-600"><i data-lucide="heart-pulse" class="w-5 h-5"></i></div>
+                                    <div class="p-2 bg-red-100 rounded-lg text-red-600"><i data-lucide="heart-pulse" class="w-5 h-5"></i></div>
                                     <h3 class="font-bold text-slate-800 uppercase tracking-tight text-sm">Saúde & Bem-Estar</h3>
                                 </div>
                                 <div class="p-6 space-y-4">
                                     <div class="grid grid-cols-2 gap-3">
                                         <div>
                                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tipo Sanguíneo</label>
-                                            <select name="tipoSanguineo" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-rose-500 text-sm">
+                                            <select name="tipoSanguineo" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-red-500 text-sm">
                                                 <option value="O+">O+</option><option value="A+">A+</option><option value="B+">B+</option><option value="AB+">AB+</option><option value="O-">O-</option><option value="A-">A-</option><option value="B-">B-</option><option value="AB-">AB-</option>
                                             </select>
                                         </div>
                                         <div>
                                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Plano de Saúde</label>
-                                            <input name="planoSaude" type="text" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-rose-500 text-sm" placeholder="Ex: Unimed">
+                                            <input name="planoSaude" type="text" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-red-500 text-sm" placeholder="Ex: Unimed">
                                         </div>
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Alergias / Restrições Alimentares</label>
-                                        <input name="alergias" type="text" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-rose-500 text-sm" placeholder="Ex: Nenhuma ou Rinite, Lactose...">
+                                        <input name="alergias" type="text" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-red-500 text-sm" placeholder="Ex: Nenhuma ou Rinite, Lactose...">
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Medicamentos em Uso</label>
-                                        <input name="medicamentos" type="text" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-rose-500 text-sm" placeholder="Ex: Nenhum ou Ritalina 10mg">
+                                        <input name="medicamentos" type="text" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-red-500 text-sm" placeholder="Ex: Nenhum ou Ritalina 10mg">
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Histórico de Cirurgias</label>
-                                        <textarea name="cirurgias" rows="2" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-rose-500 text-sm resize-none" placeholder="Ex: Nenhuma. Ou: Menisco joelho direito - 2023"></textarea>
+                                        <textarea name="cirurgias" rows="2" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-red-500 text-sm resize-none" placeholder="Ex: Nenhuma. Ou: Menisco joelho direito - 2023"></textarea>
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Lesões / Problemas de Saúde Gerais</label>
-                                        <textarea name="lesoes" rows="2" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-rose-500 text-sm resize-none" placeholder="Ex: Nenhum. Ou: Asma leve, usa bombinha."></textarea>
+                                        <textarea name="lesoes" rows="2" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-red-500 text-sm resize-none" placeholder="Ex: Nenhum. Ou: Asma leve, usa bombinha."></textarea>
                                     </div>
-                                    <div class="flex items-center gap-3 bg-rose-50 p-3 rounded-xl border border-rose-100">
-                                        <input type="checkbox" name="autorizaAtendimento" id="autorizaAtendimento" class="w-4 h-4 accent-rose-500">
-                                        <label for="autorizaAtendimento" class="text-xs font-bold text-rose-700 cursor-pointer">Autorizo atendimento médico de emergência</label>
+                                    <div class="flex items-center gap-3 bg-red-50 p-3 rounded-xl border border-red-100">
+                                        <input type="checkbox" name="autorizaAtendimento" id="autorizaAtendimento" class="w-4 h-4 accent-red-500">
+                                        <label for="autorizaAtendimento" class="text-xs font-bold text-red-700 cursor-pointer">Autorizo atendimento médico de emergência</label>
                                     </div>
                                 </div>
                             </div>
@@ -509,7 +746,7 @@
                         </div>
 
                         <div class="flex justify-end pt-4">
-                            <button type="submit" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black px-12 py-4 rounded-2xl shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95">
+                            <button type="submit" class="w-full sm:w-auto bg-[#DA291C] hover:bg-red-800 text-white font-black px-12 py-4 rounded-2xl shadow-xl shadow-red-600/20 flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95">
                                 <i data-lucide="check-circle" class="w-6 h-6"></i> Finalizar Cadastro
                             </button>
                         </div>
@@ -518,43 +755,76 @@
 
                 <!-- SEÇÃO: RELATÓRIOS -->
                 <div id="view-relatorios" class="view-section hidden space-y-6">
-                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
-                            <div>
-                                <h2 class="text-2xl font-black text-slate-900">Relatórios Estruturais</h2>
-                                <p class="text-slate-500 text-sm">Gere tabelas completas para impressão ou exportação.</p>
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden print-break-inside-avoid">
+                        <div class="p-6 border-b border-slate-100 flex flex-col gap-4 no-print">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h2 class="text-2xl font-black text-slate-900">Relatórios Completos</h2>
+                                    <p class="text-slate-500 text-sm">Selecione as colunas para gerar a lista personalizada.</p>
+                                </div>
+                                <div class="flex gap-2">
+                                     <button onclick="exportExcel()" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors shadow-lg font-bold text-sm" title="Baixar Planilha Excel">
+                                         <i data-lucide="sheet" class="w-4 h-4"></i> Excel
+                                     </button>
+                                     <button onclick="exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-[#DA291C] text-white rounded-xl hover:bg-red-800 transition-colors shadow-lg font-bold text-sm" title="Baixar PDF">
+                                         <i data-lucide="file-text" class="w-4 h-4"></i> PDF
+                                     </button>
+                                     <button onclick="window.print()" class="p-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors shadow-lg" title="Imprimir Tela">
+                                         <i data-lucide="printer" class="w-5 h-5"></i>
+                                     </button>
+                                 </div>
                             </div>
-                            <div class="flex gap-2 w-full sm:w-auto">
-                                <select id="relatorio-cat-filter" class="px-4 py-2 rounded-xl border border-slate-200 text-sm outline-none bg-slate-50">
-                                    <option value="Todas">Todas as Categorias</option>
-                                    <option value="SUB 9">SUB 9</option><option value="SUB 11">SUB 11</option><option value="SUB 13">SUB 13</option><option value="SUB 15">SUB 15</option><option value="SUB 17">SUB 17</option>
-                                </select>
-                                <button onclick="exportCSV()" class="p-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors shadow-lg" title="Exportar CSV">
-                                    <i data-lucide="download" class="w-5 h-5"></i>
-                                </button>
-                                <button onclick="window.print()" class="p-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors shadow-lg">
-                                    <i data-lucide="printer" class="w-5 h-5"></i>
-                                </button>
+                            
+                            <!-- Filtros Avançados -->
+                            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                                <p class="text-xs font-bold text-slate-400 uppercase mb-3">Colunas Visíveis (Marque o que deseja ver):</p>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked onchange="toggleCol('col-cat')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Categoria</span></label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked onchange="toggleCol('col-pos')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Posição</span></label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked onchange="toggleCol('col-nasc')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Nascimento</span></label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" onchange="toggleCol('col-doc')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">CPF/RG</span></label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" onchange="toggleCol('col-end')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Endereço</span></label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked onchange="toggleCol('col-esc')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Escola</span></label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked onchange="toggleCol('col-unif')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Uniforme</span></label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked onchange="toggleCol('col-resp')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Responsáveis</span></label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked onchange="toggleCol('col-cont')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Telefones</span></label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked onchange="toggleCol('col-saude')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Saúde (Resumo)</span></label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" onchange="toggleCol('col-sangue')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Tipo Sang.</span></label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" onchange="toggleCol('col-obs')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Observações</span></label>
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-slate-200 flex items-center gap-3">
+                                    <span class="text-xs font-bold text-slate-400 uppercase">Filtrar Categoria:</span>
+                                    <select id="relatorio-cat-filter" onchange="renderRelatorios()" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold outline-none bg-white">
+                                        <option value="Todas">Todas</option>
+                                        <option value="SUB 9">SUB 9</option><option value="SUB 11">SUB 11</option><option value="SUB 13">SUB 13</option><option value="SUB 15">SUB 15</option><option value="SUB 17">SUB 17</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse min-w-[1000px]">
+                            <table class="w-full text-left border-collapse min-w-[1200px]">
                                 <thead>
                                     <tr class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                                        <th class="py-4 px-6">Atleta</th>
-                                        <th class="py-4 px-6">Categoria</th>
-                                        <th class="py-4 px-6">Nascimento</th>
-                                        <th class="py-4 px-6">Escola / Turno</th>
-                                        <th class="py-4 px-6">Uniforme</th>
-                                        <th class="py-4 px-6">Principal Contato</th>
-                                        <th class="py-4 px-6">Status Saúde</th>
+                                        <th class="py-2 px-3 sticky left-0 bg-slate-50 z-10 border-r border-slate-100">Atleta</th>
+                                        <th class="py-2 px-3 col-cat">Cat.</th>
+                                        <th class="py-2 px-3 col-pos">Posição</th>
+                                        <th class="py-2 px-3 col-nasc">Nasc.</th>
+                                        <th class="py-2 px-3 col-doc" style="display:none">CPF / RG</th>
+                                        <th class="py-2 px-3 col-end" style="display:none">Endereço Completo</th>
+                                        <th class="py-2 px-3 col-esc">Escola</th>
+                                        <th class="py-2 px-3 col-unif">Uniforme (C/S/M/P)</th>
+                                        <th class="py-2 px-3 col-resp">Pais (Mãe/Pai)</th>
+                                        <th class="py-2 px-3 col-cont">Contatos</th>
+                                        <th class="py-2 px-3 col-saude">Saúde</th>
+                                        <th class="py-2 px-3 col-sangue" style="display:none">Sangue</th>
+                                        <th class="py-2 px-3 col-obs" style="display:none">Obs.</th>
                                     </tr>
                                 </thead>
-                                <tbody id="relatorio-table" class="text-sm divide-y divide-slate-100"></tbody>
+                                <tbody id="relatorio-table" class="text-[11px] divide-y divide-slate-100"></tbody>
                             </table>
                         </div>
                         <div class="p-4 bg-slate-50 flex justify-between items-center no-print">
-                            <span class="text-xs font-bold text-slate-400">Total: <span id="relatorio-count" class="text-slate-900">0</span> Atletas</span>
+                            <span class="text-xs font-bold text-slate-400">Total listado: <span id="relatorio-count" class="text-slate-900">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -625,22 +895,116 @@
             return isNaN(dt2.getTime()) ? null : dt2;
         };
         
-        let players = []; // Iniciado vazio, carregado do Firebase
+        let players = []; 
+        let pendingPlayers = [];
 
         async function loadPlayersFromFirebase() {
             if (!window.firebaseDb) return;
             try {
+                // CACHE REMOVIDO PARA EVITAR DADOS DESATUALIZADOS EM DESENVOLVIMENTO
+                // const lastLoad = sessionStorage.getItem('lastLoad');
+                // ...
+                
                 const q = window.query(window.collection(window.firebaseDb, "atletas"), window.orderBy("nome"));
                 const querySnapshot = await window.getDocs(q);
                 players = [];
+                pendingPlayers = [];
+                
+                let allData = [];
                 querySnapshot.forEach((doc) => {
-                    players.push({ id: doc.id, ...doc.data() });
+                    const data = { id: doc.id, ...doc.data() };
+                    allData.push(data);
+                    if (data.status === 'Pendente') {
+                        pendingPlayers.push(data);
+                    } else {
+                        players.push(data);
+                    }
                 });
-                console.log("Atletas carregados:", players.length);
+                
+                // Salva no cache
+                sessionStorage.setItem('cachedPlayers', JSON.stringify(allData));
+                sessionStorage.setItem('lastLoad', now);
+
+                updateBadges();
                 renderDashboard();
                 renderAtletas();
+                renderInscricoes();
             } catch (e) {
                 console.error("Erro ao carregar atletas:", e);
+            }
+        }
+
+        function updateBadges() {
+            const badge = document.getElementById('badge-inscricoes');
+            if(badge) {
+                badge.innerText = pendingPlayers.length;
+                badge.classList.toggle('hidden', pendingPlayers.length === 0);
+            }
+        }
+
+        function renderInscricoes() {
+            const list = document.getElementById('inscricoes-list');
+            if(!list) return;
+            
+            if (pendingPlayers.length === 0) {
+                list.innerHTML = `<div class="p-12 text-center bg-white rounded-3xl border border-slate-200">
+                    <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400"><i data-lucide="inbox" class="w-8 h-8"></i></div>
+                    <h3 class="font-bold text-slate-800">Nenhuma solicitação pendente</h3>
+                    <p class="text-sm text-slate-500">Divulgue o link de inscrição para receber novos atletas.</p>
+                    <div class="mt-4 p-3 bg-slate-50 rounded-xl inline-flex items-center gap-2 border border-slate-200 text-xs font-mono text-slate-600 select-all cursor-pointer" onclick="navigator.clipboard.writeText(window.location.href.split('?')[0] + '?page=inscricao'); alert('Link copiado!')">
+                        <i data-lucide="link" class="w-4 h-4"></i>
+                        ${window.location.href.split('?')[0]}?page=inscricao
+                    </div>
+                </div>`;
+                return;
+            }
+
+            list.innerHTML = pendingPlayers.map(p => `
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 font-black text-lg">${getAvatar(p.nome)}</div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-lg">${p.nome}</h4>
+                            <p class="text-xs text-slate-500 font-bold">${calcCat(p.nascimento)} • ${p.posicao || 'Não informada'}</p>
+                            <p class="text-xs text-slate-400 mt-1">Resp: ${p.contato?.mae || '-'} (${p.contato?.foneMae || '-'})</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <button onclick="approvePlayer('${p.id}')" class="flex-1 md:flex-none px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-600/20 text-sm flex items-center justify-center gap-2">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i> Aprovar
+                        </button>
+                        <button onclick="editPlayer('${p.id}')" class="flex-1 md:flex-none px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2">
+                            <i data-lucide="edit-2" class="w-4 h-4"></i> Editar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        async function approvePlayer(id) {
+            if(!confirm("Deseja aprovar este atleta? Ele passará para o elenco ativo.")) return;
+            
+            if (window.firebaseDb) {
+                try {
+                    const ref = window.doc(window.firebaseDb, "atletas", id);
+                    await window.updateDoc(ref, { status: "Ativo" });
+                    // Atualiza localmente
+                    const idx = pendingPlayers.findIndex(p => p.id === id);
+                    if(idx > -1) {
+                        const p = pendingPlayers[idx];
+                        p.status = 'Ativo';
+                        players.push(p);
+                        pendingPlayers.splice(idx, 1);
+                    }
+                    updateBadges();
+                    renderInscricoes();
+                    renderDashboard();
+                    alert("Atleta aprovado com sucesso!");
+                } catch(e) {
+                    console.error("Erro ao aprovar:", e);
+                    alert("Erro ao aprovar atleta.");
+                }
             }
         }
 
@@ -714,7 +1078,7 @@
         function navigate(view) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
             document.getElementById(`view-${view}`).classList.remove('hidden');
-            const titles = { dashboard: 'Dashboard', atletas: 'Elenco', cadastro: 'Novo Atleta', relatorios: 'Relatórios', presenca: 'Presença' };
+            const titles = { dashboard: 'Dashboard', atletas: 'Elenco', cadastro: 'Novo Atleta', relatorios: 'Relatórios', inscricoes: 'Inscrições' };
             document.getElementById('page-title').innerText = titles[view] || view;
             document.querySelectorAll('.nav-btn').forEach(b => {
                 b.classList.remove('active-nav');
@@ -729,7 +1093,7 @@
             if(view === 'dashboard') renderDashboard();
             if(view === 'atletas') renderAtletas();
             if(view === 'relatorios') renderRelatorios();
-            if(view === 'presenca') renderPresenca();
+            // if(view === 'presenca') renderPresenca(); // REMOVIDO
         }
 
         function openSidebar() {
@@ -768,19 +1132,20 @@
             let html = `
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-                        <div class="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20"><i data-lucide="users"></i></div>
+                        <div class="w-14 h-14 bg-[#DA291C] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-500/20"><i data-lucide="users"></i></div>
                         <div><p class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Total Elenco</p><h3 class="text-3xl font-black text-slate-900 leading-none mt-1">${total}</h3></div>
                     </div>
                     <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-                        <div class="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20"><i data-lucide="check-circle"></i></div>
+                        <div class="w-14 h-14 bg-yellow-400 rounded-2xl flex items-center justify-center text-red-900 shadow-lg shadow-yellow-500/20"><i data-lucide="check-circle"></i></div>
                         <div><p class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Atletas Ativos</p><h3 class="text-3xl font-black text-slate-900 leading-none mt-1">${ativos}</h3></div>
                     </div>
                     <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-                        <div class="w-14 h-14 bg-rose-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-rose-500/20"><i data-lucide="alert-triangle"></i></div>
+                        <div class="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-slate-500/20"><i data-lucide="alert-triangle"></i></div>
                         <div><p class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Afastados</p><h3 class="text-3xl font-black text-slate-900 leading-none mt-1">${afastados}</h3></div>
                     </div>
-                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-                        <div class="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-purple-500/20"><i data-lucide="stethoscope"></i></div>
+                    <!-- MOBILE: Esconde Hist. Cirurgia para economizar espaço -->
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 hidden sm:flex">
+                        <div class="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center text-red-600 shadow-lg shadow-red-500/20"><i data-lucide="stethoscope"></i></div>
                         <div><p class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Hist. Cirurgia</p><h3 class="text-3xl font-black text-slate-900 leading-none mt-1">${comCirurgia}</h3></div>
                     </div>
                 </div>
@@ -794,7 +1159,7 @@
                             return `
                                 <div class="flex flex-col items-center">
                                     <div class="w-full bg-slate-100 h-24 rounded-2xl overflow-hidden flex flex-col justify-end relative">
-                                        <div class="bg-emerald-500 w-full transition-all duration-1000" style="height: ${perc}%"></div>
+                                        <div class="bg-[#DA291C] w-full transition-all duration-1000" style="height: ${perc}%"></div>
                                         <span class="absolute inset-0 flex items-center justify-center font-black text-slate-400 text-sm">${count}</span>
                                     </div>
                                     <p class="mt-3 font-bold text-xs text-slate-500">${c}</p>
@@ -811,7 +1176,7 @@
                             <div class="flex items-start gap-3 p-4 bg-rose-50 rounded-2xl border border-rose-100">
                                 <div class="w-8 h-8 rounded-xl bg-rose-500 flex items-center justify-center text-white font-black text-xs flex-shrink-0">${getAvatar(p.nome)}</div>
                                 <div>
-                                    <p class="font-bold text-slate-800 text-sm">${p.nome} <span class="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full ml-1">${calcCat(p.nascimento)}</span></p>
+                                    <p class="font-bold text-slate-800 text-sm">${p.nome} <span class="text-[10px] font-bold text-[#DA291C] bg-red-100 px-2 py-0.5 rounded-full ml-1">${calcCat(p.nascimento)}</span></p>
                                     ${p.saude.alergias !== 'Nenhuma' ? `<p class="text-xs text-rose-600 mt-0.5">⚠ Alergia: ${p.saude.alergias}</p>` : ''}
                                     ${p.saude.cirurgias && p.saude.cirurgias !== 'Nenhuma' ? `<p class="text-xs text-purple-600 mt-0.5">🏥 Cirurgia: ${p.saude.cirurgias}</p>` : ''}
                                     ${p.saude.lesoes && p.saude.lesoes !== 'Nenhuma' ? `<p class="text-xs text-amber-600 mt-0.5">🩹 Lesão/Condição: ${p.saude.lesoes}</p>` : ''}
@@ -833,25 +1198,25 @@
 
             grid.innerHTML = filtered.map(p => `
                 <div class="card-player bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col group">
-                    <div class="h-24 bg-slate-100 p-4 flex justify-between items-start relative overflow-hidden">
+                    <div class="h-24 bg-slate-900 p-4 flex justify-between items-start relative overflow-hidden">
                         <div class="absolute inset-0 opacity-10 flex items-center justify-center -rotate-12 translate-x-4">
-                             <i data-lucide="shield" class="w-32 h-32 text-slate-900"></i>
+                             <img src="logo.png" class="w-32 h-32 object-contain opacity-30">
                         </div>
-                        <span class="bg-emerald-600 text-white text-[10px] font-black px-3 py-1 rounded-full relative z-10">${calcCat(p.nascimento)}</span>
-                        <span class="bg-white/80 backdrop-blur text-slate-600 text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-200 relative z-10 ${p.status === 'Afastado' ? 'text-rose-500 border-rose-200 bg-rose-50/80' : ''}">${p.status}</span>
+                        <span class="bg-[#DA291C] text-white text-[10px] font-black px-3 py-1 rounded-full relative z-10 border border-white/20 shadow-lg">${calcCat(p.nascimento)}</span>
+                        <span class="bg-white/90 backdrop-blur text-slate-900 text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-200 relative z-10 ${p.status === 'Afastado' ? 'text-red-600 border-red-200 bg-red-50/90' : ''}">${p.status}</span>
                     </div>
                     <div class="px-6 pb-6 flex-1 flex flex-col items-center -mt-10 relative z-10">
                         <div class="mb-4 group-hover:scale-110 transition-transform">
                             ${p.foto
                                 ? `<img src="${p.foto}" alt="${p.nome}" class="w-20 h-20 rounded-2xl object-cover border-4 border-white shadow-xl">`
-                                : `<div class="w-20 h-20 rounded-2xl bg-white shadow-xl border-4 border-white flex items-center justify-center text-xl font-black text-emerald-600 uppercase">${getAvatar(p.nome)}</div>`
+                                : `<div class="w-20 h-20 rounded-2xl bg-white shadow-xl border-4 border-white flex items-center justify-center text-xl font-black text-[#DA291C] uppercase">${getAvatar(p.nome)}</div>`
                             }
                         </div>
                         <h4 class="font-extrabold text-slate-900 text-lg leading-tight text-center truncate w-full mb-1">${p.nome}</h4>
                         <p class="text-xs text-slate-400 font-bold mb-1">${new Date(p.nascimento).getFullYear()}</p>
-                        <p class="text-xs text-emerald-600 font-bold mb-4">${p.posicao || ''} ${p.numeroCamisa ? '• Nº '+p.numeroCamisa : ''}</p>
-                        ${p.saude.alergias !== 'Nenhuma' ? `<span class="text-[10px] bg-rose-50 text-rose-500 border border-rose-100 px-2 py-0.5 rounded-full font-bold mb-2">⚠ ${p.saude.alergias}</span>` : ''}
-                        <button onclick="openPlayer(${p.id})" class="w-full py-2.5 bg-slate-900 hover:bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all mt-auto">Ver Ficha Completa</button>
+                        <p class="text-xs text-[#DA291C] font-bold mb-4">${p.posicao || ''} ${p.numeroCamisa ? '• Nº '+p.numeroCamisa : ''}</p>
+                        ${p.saude.alergias !== 'Nenhuma' ? `<span class="text-[10px] bg-red-50 text-red-500 border border-red-100 px-2 py-0.5 rounded-full font-bold mb-2">⚠ ${p.saude.alergias}</span>` : ''}
+                        <button onclick="openPlayer('${p.id}')" class="w-full py-2.5 bg-slate-900 hover:bg-[#DA291C] text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all mt-auto border-t border-slate-800">Ver Ficha Completa</button>
                     </div>
                 </div>
             `).join('');
@@ -863,21 +1228,55 @@
             const filter = document.getElementById('relatorio-cat-filter').value;
             const filtered = players.filter(p => filter === 'Todas' || calcCat(p.nascimento) === filter);
             document.getElementById('relatorio-count').innerText = filtered.length;
+            
             table.innerHTML = filtered.map(p => `
-                <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="py-4 px-6 font-bold text-slate-900">${p.nome}</td>
-                    <td class="py-4 px-6"><span class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded-lg font-bold text-xs">${calcCat(p.nascimento)}</span></td>
-                    <td class="py-4 px-6 text-slate-500">${p.nascimento.split('-').reverse().join('/')}</td>
-                    <td class="py-4 px-6 text-slate-500 text-xs">${p.escola ? `${p.escola.nome || '-'}<br><span class="font-bold text-slate-400">${p.escola.serie || ''} • ${p.escola.turno || ''}</span>` : '-'}</td>
-                    <td class="py-4 px-6 text-slate-500 text-xs font-bold">Cam:${p.uniforme.camisa} | Chut:${p.uniforme.calcado}</td>
-                    <td class="py-4 px-6 text-slate-600 font-medium">${p.contato.foneMae || p.contato.fonePai || 'N/A'}</td>
-                    <td class="py-4 px-6 text-xs">
-                        ${p.saude.alergias !== 'Nenhuma' ? `<span class="text-rose-500 font-bold block">⚠ ${p.saude.alergias}</span>` : ''}
-                        ${p.saude.cirurgias && p.saude.cirurgias !== 'Nenhuma' ? `<span class="text-purple-500 font-bold block">🏥 Cirurgia</span>` : ''}
-                        ${p.saude.alergias === 'Nenhuma' && (!p.saude.cirurgias || p.saude.cirurgias === 'Nenhuma') ? '<span class="text-emerald-500 font-bold">✓ OK</span>' : ''}
+                <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
+                    <td class="py-2 px-3 font-bold text-slate-900 sticky left-0 bg-white border-r border-slate-100">${p.nome}</td>
+                    <td class="py-2 px-3 col-cat"><span class="bg-red-50 text-red-700 px-1.5 py-0.5 rounded font-bold text-[10px] whitespace-nowrap">${calcCat(p.nascimento)}</span></td>
+                    <td class="py-2 px-3 col-pos text-slate-600">${p.posicao || '-'}</td>
+                    <td class="py-2 px-3 col-nasc text-slate-500 whitespace-nowrap">${p.nascimento.split('-').reverse().join('/')}</td>
+                    <td class="py-2 px-3 col-doc text-slate-500 text-[10px] whitespace-nowrap" style="display:none">
+                        <strong>CPF:</strong> ${p.cpf || '-'}<br><strong>RG:</strong> ${p.rg || '-'}
                     </td>
+                    <td class="py-2 px-3 col-end text-slate-500" style="display:none">
+                        ${p.endereco ? `${p.endereco.rua || ''}, ${p.endereco.numero || ''}<br>${p.endereco.bairro || ''} - ${p.endereco.cidade || ''}` : '-'}
+                    </td>
+                    <td class="py-2 px-3 col-esc text-slate-500">
+                        ${p.escola ? `<span class="font-bold text-slate-700">${p.escola.nome || '-'}</span><br>Série: ${p.escola.serie || '-'} • ${p.escola.turno || '-'}` : '-'}
+                    </td>
+                    <td class="py-2 px-3 col-unif text-slate-500 font-mono text-[10px]">
+                        ${p.uniforme ? `C:${p.uniforme.camisa} S:${p.uniforme.calcao} M:${p.uniforme.meiao} P:${p.uniforme.calcado}` : '-'}
+                    </td>
+                    <td class="py-2 px-3 col-resp text-slate-500">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-[10px]"><strong class="text-slate-700">M:</strong> ${p.contato.mae || '-'}</span>
+                            <span class="text-[10px]"><strong class="text-slate-700">P:</strong> ${p.contato.pai || '-'}</span>
+                        </div>
+                    </td>
+                    <td class="py-2 px-3 col-cont text-slate-600 font-medium whitespace-nowrap">
+                        <div class="flex flex-col gap-1">
+                            <span>${p.contato.foneMae || '-'}</span>
+                            <span>${p.contato.fonePai || '-'}</span>
+                        </div>
+                    </td>
+                    <td class="py-2 px-3 col-saude">
+                        ${p.saude.alergias !== 'Nenhuma' ? `<span class="text-rose-600 font-bold block text-[10px] whitespace-nowrap">⚠ ${p.saude.alergias}</span>` : ''}
+                        ${p.saude.cirurgias && p.saude.cirurgias !== 'Nenhuma' ? `<span class="text-purple-600 font-bold block text-[10px] whitespace-nowrap">🏥 Cirurgia</span>` : ''}
+                        ${p.saude.alergias === 'Nenhuma' && (!p.saude.cirurgias || p.saude.cirurgias === 'Nenhuma') ? '<span class="text-emerald-500 font-bold text-[10px]">✓ OK</span>' : ''}
+                    </td>
+                    <td class="py-2 px-3 col-sangue font-bold text-rose-700" style="display:none">${p.saude.sangue || '-'}</td>
+                    <td class="py-2 px-3 col-obs text-slate-500 text-[10px] italic max-w-[200px] truncate" style="display:none">${p.observacoes || '-'}</td>
                 </tr>
             `).join('');
+            
+            // Reaplica filtros visuais
+            ['col-cat', 'col-pos', 'col-nasc', 'col-doc', 'col-end', 'col-esc', 'col-unif', 'col-resp', 'col-cont', 'col-saude', 'col-sangue', 'col-obs'].forEach(c => toggleCol(c, true));
+        }
+
+        function toggleCol(colClass, onlyApply = false) {
+            const chk = document.querySelector(`input[onchange="toggleCol('${colClass}')"]`);
+            const display = chk.checked ? '' : 'none';
+            document.querySelectorAll('.' + colClass).forEach(el => el.style.display = display);
         }
 
         function renderPresenca() {
@@ -937,6 +1336,52 @@
             document.getElementById('cat-display').innerText = calcCat(e.target.value);
         };
 
+        // PUBLIC FORM SUBMIT
+        document.getElementById('public-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i data-lucide="loader" class="w-6 h-6 animate-spin"></i> Enviando...';
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+
+            const f = new FormData(e.target);
+            const p = {
+                nome: f.get('nome'),
+                cpf: f.get('cpf'),
+                rg: f.get('rg'),
+                nascimento: f.get('dataNascimento'),
+                posicao: f.get('posicao'),
+                status: 'Pendente', 
+                
+                // Dados Completos
+                uniforme: { camisa: f.get('camisa'), calcao: f.get('calcao'), meiao: f.get('meiao'), calcado: f.get('calcado') },
+                contato: { mae: f.get('mae'), foneMae: f.get('foneMae'), pai: f.get('pai'), fonePai: f.get('fonePai') },
+                saude: { sangue: f.get('tipoSanguineo'), alergias: f.get('alergias') || 'Nenhuma', cirurgias: f.get('cirurgias') || 'Nenhuma', lesoes: 'Nenhuma', plano: f.get('planoSaude') || '', medicamentos: f.get('medicamentos') || 'Nenhum' },
+                escola: { nome: f.get('nomeEscola'), serie: f.get('serie'), turno: f.get('turno') },
+                endereco: { cep: f.get('cep'), rua: f.get('rua'), numero: f.get('endNumero'), bairro: f.get('bairro'), cidade: f.get('cidade') },
+                
+                createdAt: new Date().toISOString()
+            };
+
+            if (window.firebaseDb) {
+                try {
+                    await window.addDoc(window.collection(window.firebaseDb, "atletas"), p);
+                    alert("Inscrição enviada com sucesso! Aguarde o contato da diretoria.");
+                    e.target.reset();
+                } catch (e) {
+                    console.error("Erro ao enviar inscrição: ", e);
+                    alert("Erro ao enviar: " + e.message);
+                }
+            } else {
+                alert("Erro: Sistema offline. Tente novamente mais tarde.");
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        };
+
         document.getElementById('cadastro-form').onsubmit = async (e) => {
             e.preventDefault();
             const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -949,6 +1394,8 @@
             const p = {
                 // id: Date.now(), // Gerado pelo Firebase
                 nome: f.get('nome'),
+                cpf: f.get('cpf'),
+                rg: f.get('rg'),
                 nascimento: f.get('dataNascimento'),
                 posicao: f.get('posicao'),
                 numeroCamisa: f.get('numeroCamisa'),
@@ -1014,6 +1461,10 @@
                     <!-- Identificação -->
                     <div class="space-y-3">
                         <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1">Identificação</h5>
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200">
+                            <p class="text-xs text-slate-400 mb-0.5">CPF / RG</p>
+                            <p class="font-bold text-slate-800 text-xs">${p.cpf || '-'} <span class="text-slate-300">|</span> ${p.rg || '-'}</p>
+                        </div>
                         <div class="bg-white p-4 rounded-2xl border border-slate-200">
                             <p class="text-xs text-slate-400 mb-0.5">Nascimento</p>
                             <p class="font-bold text-slate-800">${p.nascimento.split('-').reverse().join('/')}</p>
@@ -1109,38 +1560,131 @@
             document.getElementById('player-modal').classList.remove('flex');
         }
 
-        function exportCSV() {
+        function exportExcel() {
             const filter = document.getElementById('relatorio-cat-filter').value;
             const filtered = players.filter(p => filter === 'Todas' || calcCat(p.nascimento) === filter);
-            const header = 'Nome,Categoria,Nascimento,Escola,Serie,Turno,CEP,Endereço,Sangue,Alergias,Cirurgias,Fone Mãe,Fone Pai';
-            const rows = filtered.map(p => [
-                p.nome, calcCat(p.nascimento), p.nascimento.split('-').reverse().join('/'),
-                p.escola?.nome||'', p.escola?.serie||'', p.escola?.turno||'',
-                p.endereco?.cep||'', `${p.endereco?.rua||''} ${p.endereco?.numero||''}`.trim(),
-                p.saude.sangue, p.saude.alergias, p.saude.cirurgias||'Nenhuma',
-                p.contato.foneMae, p.contato.fonePai
-            ].map(v => `"${v}"`).join(','));
-            const csv = [header, ...rows].join('\n');
-            const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'atletas.csv'; a.click();
+            
+            // Mapeia colunas visíveis
+            const cols = [];
+            if(document.querySelector('input[onchange="toggleCol(\'col-cat\')"]').checked) cols.push('Categoria');
+            if(document.querySelector('input[onchange="toggleCol(\'col-pos\')"]').checked) cols.push('Posição');
+            if(document.querySelector('input[onchange="toggleCol(\'col-nasc\')"]').checked) cols.push('Nascimento');
+            if(document.querySelector('input[onchange="toggleCol(\'col-doc\')"]').checked) cols.push('Documentos');
+            if(document.querySelector('input[onchange="toggleCol(\'col-end\')"]').checked) cols.push('Endereço');
+            if(document.querySelector('input[onchange="toggleCol(\'col-esc\')"]').checked) cols.push('Escola');
+            if(document.querySelector('input[onchange="toggleCol(\'col-unif\')"]').checked) cols.push('Uniforme');
+            if(document.querySelector('input[onchange="toggleCol(\'col-resp\')"]').checked) cols.push('Responsáveis');
+            if(document.querySelector('input[onchange="toggleCol(\'col-cont\')"]').checked) cols.push('Contatos');
+            if(document.querySelector('input[onchange="toggleCol(\'col-saude\')"]').checked) cols.push('Saúde');
+            if(document.querySelector('input[onchange="toggleCol(\'col-sangue\')"]').checked) cols.push('Sangue');
+            if(document.querySelector('input[onchange="toggleCol(\'col-obs\')"]').checked) cols.push('Observações');
+
+            const data = filtered.map(p => {
+                const row = { 'Nome': p.nome };
+                if(cols.includes('Categoria')) row['Categoria'] = calcCat(p.nascimento);
+                if(cols.includes('Posição')) row['Posição'] = p.posicao || '';
+                if(cols.includes('Nascimento')) row['Nascimento'] = p.nascimento.split('-').reverse().join('/');
+                if(cols.includes('Documentos')) row['Documentos'] = `CPF: ${p.cpf||''} RG: ${p.rg||''}`;
+                if(cols.includes('Endereço')) row['Endereço'] = `${p.endereco?.rua||''}, ${p.endereco?.numero||''} - ${p.endereco?.bairro||''} (${p.endereco?.cidade||''})`;
+                if(cols.includes('Escola')) row['Escola'] = `${p.escola?.nome||''} (${p.escola?.serie||''})`;
+                if(cols.includes('Uniforme')) row['Uniforme'] = `C:${p.uniforme?.camisa} S:${p.uniforme?.calcao} M:${p.uniforme?.meiao} P:${p.uniforme?.calcado}`;
+                if(cols.includes('Responsáveis')) row['Responsáveis'] = `M: ${p.contato?.mae||''} P: ${p.contato?.pai||''}`;
+                if(cols.includes('Contatos')) row['Contatos'] = `M: ${p.contato?.foneMae||''} P: ${p.contato?.fonePai||''}`;
+                if(cols.includes('Saúde')) row['Saúde'] = `Alerg: ${p.saude?.alergias||'N'} Cirurg: ${p.saude?.cirurgias||'N'}`;
+                if(cols.includes('Sangue')) row['Sangue'] = p.saude?.sangue || '';
+                if(cols.includes('Observações')) row['Observações'] = p.observacoes || '';
+                return row;
+            });
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Atletas");
+            XLSX.writeFile(wb, `Relatorio_Atletas_${new Date().toLocaleDateString().replace(/\//g,'-')}.xlsx`);
         }
 
-        function safeCreateIcons() {
-            if (typeof lucide !== 'undefined') lucide.createIcons();
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4'); // Paisagem
+            
+            // Cabeçalho
+            doc.setFillColor(218, 41, 28); // #DA291C
+            doc.rect(0, 0, 297, 20, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.text("MANCHESTER BRASIL - Relatório de Atletas", 14, 13);
+            doc.setFontSize(10);
+            doc.text(`Gerado em: ${new Date().toLocaleDateString()} às ${new Date().toLocaleTimeString()}`, 200, 13);
+
+            // Prepara dados da tabela
+            const head = [['Nome']];
+            const body = [];
+            
+            // Captura colunas visíveis (Head)
+            const chk = (id) => document.querySelector(`input[onchange="toggleCol('${id}')"]`)?.checked;
+
+            if(chk('col-cat')) head[0].push('Cat.');
+            if(chk('col-pos')) head[0].push('Pos.');
+            if(chk('col-nasc')) head[0].push('Nasc.');
+            if(chk('col-doc')) head[0].push('Doc.');
+            if(chk('col-end')) head[0].push('Endereço');
+            if(chk('col-esc')) head[0].push('Escola');
+            if(chk('col-unif')) head[0].push('Unif.');
+            if(chk('col-resp')) head[0].push('Pais');
+            if(chk('col-cont')) head[0].push('Contatos');
+            if(chk('col-saude')) head[0].push('Saúde');
+            if(chk('col-sangue')) head[0].push('Tp.Sang.');
+            if(chk('col-obs')) head[0].push('Obs.');
+
+            const filter = document.getElementById('relatorio-cat-filter').value;
+            const filtered = players.filter(p => filter === 'Todas' || calcCat(p.nascimento) === filter);
+
+            filtered.forEach(p => {
+                const row = [p.nome];
+                if(chk('col-cat')) row.push(calcCat(p.nascimento));
+                if(chk('col-pos')) row.push(p.posicao || '-');
+                if(chk('col-nasc')) row.push(p.nascimento ? p.nascimento.split('-').reverse().join('/') : '-');
+                if(chk('col-doc')) row.push(`CPF:${p.cpf||'-'}\nRG:${p.rg||'-'}`);
+                if(chk('col-end')) row.push(p.endereco ? `${p.endereco.rua||''}, ${p.endereco.numero||''}\n${p.endereco.bairro||''}` : '-');
+                if(chk('col-esc')) row.push(p.escola ? `${p.escola.nome||''}\n${p.escola.serie||''}` : '-');
+                if(chk('col-unif')) row.push(p.uniforme ? `C:${p.uniforme.camisa||'-'} S:${p.uniforme.calcao||'-'}\nM:${p.uniforme.meiao||'-'} P:${p.uniforme.calcado||'-'}` : '-');
+                if(chk('col-resp')) row.push(p.contato ? `M:${p.contato.mae||'-'}\nP:${p.contato.pai||'-'}` : '-');
+                if(chk('col-cont')) row.push(p.contato ? `M:${p.contato.foneMae||'-'}\nP:${p.contato.fonePai||'-'}` : '-');
+                if(chk('col-saude')) row.push(p.saude ? (p.saude.alergias !== 'Nenhuma' ? `⚠ ${p.saude.alergias}` : 'OK') : '-');
+                if(chk('col-sangue')) row.push(p.saude?.sangue || '-');
+                if(chk('col-obs')) row.push(p.observacoes || '-');
+                body.push(row);
+            });
+
+            doc.autoTable({
+                head: head,
+                body: body,
+                startY: 25,
+                styles: { fontSize: 8, cellPadding: 2, valign: 'middle' },
+                headStyles: { fillColor: [20, 20, 20], textColor: [255, 255, 255], fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [245, 245, 245] },
+                margin: { top: 25 }
+            });
+
+            doc.save(`Relatorio_Manchester_${new Date().toISOString().split('T')[0]}.pdf`);
         }
 
         const updateVH = () => {
             if (typeof lucide !== 'undefined') lucide.createIcons();
             let vh = window.innerHeight * 0.01;
             document.documentElement.style.setProperty('--vh', `${vh}px`);
-            document.body.style.height = '100vh';
-            document.body.style.height = `calc(${vh}px * 100)`;
         };
+        window.updateVH = updateVH; 
+
+        // Inicialização e Safe Icons
+        function safeCreateIcons() {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
         window.onload = () => {
             updateVH();
             window.addEventListener('resize', updateVH);
-            if (TEST_MODE) {
+            if (typeof TEST_MODE !== 'undefined' && TEST_MODE) {
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
                 navigate('dashboard');

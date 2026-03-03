@@ -1,0 +1,17 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Permite que qualquer um crie um documento na coleção 'atletas',
+    // desde que o status seja 'Pendente' (inscrição pública).
+    // Permite leitura/escrita total se estiver autenticado (admin).
+    match /atletas/{document=**} {
+      allow create: if request.resource.data.status == 'Pendente';
+      allow read, write: if request.auth != null;
+    }
+  }
+}      // Se você escolheu "Modo de Teste" ao criar, a regra padrão expira em 30 dias.
+      // Esta regra acima é mais segura e permanente para seu sistema de login.
+    }
+  }
+}
