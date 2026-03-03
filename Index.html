@@ -84,7 +84,7 @@
                     // Verifica URL para redirecionamento direto (ex: link de inscrição)
                     const params = new URLSearchParams(window.location.search);
                     if (params.get('page') === 'inscricao') {
-                        navigate('inscricao');
+                        navigate('inscricoes');
                     } else {
                         navigate('dashboard');
                         window.loadPlayersFromFirebase(); 
@@ -869,11 +869,21 @@
                 </button>
             </div>
             <div id="modal-content" class="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50"></div>
-            <div class="p-4 border-t border-slate-100 bg-white flex justify-end gap-3 flex-shrink-0">
-                <button onclick="closeModal()" class="px-6 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-200 transition-all">Fechar</button>
-                <button onclick="window.print()" class="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-xl text-sm shadow-lg hover:shadow-slate-900/30 flex items-center gap-2">
-                    <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Ficha
-                </button>
+            <div class="p-4 border-t border-slate-100 bg-white flex justify-between gap-3 flex-shrink-0">
+                <div class="flex gap-2">
+                     <button id="btn-edit-player" class="px-4 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-xl text-sm flex items-center gap-2 transition-colors">
+                        <i data-lucide="edit-2" class="w-4 h-4"></i> Editar
+                    </button>
+                    <button id="btn-delete-player" class="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-sm flex items-center gap-2 transition-colors">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i> Excluir
+                    </button>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="closeModal()" class="px-6 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-200 transition-all">Fechar</button>
+                    <button onclick="window.print()" class="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-xl text-sm shadow-lg hover:shadow-slate-900/30 flex items-center gap-2">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Imprimir
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1390,6 +1400,7 @@
             submitBtn.innerHTML = '<i data-lucide="loader" class="w-6 h-6 animate-spin"></i> Salvando...';
             if(typeof lucide !== 'undefined') lucide.createIcons();
 
+            const editId = e.target.getAttribute('data-edit-id');
             const f = new FormData(e.target);
             const p = {
                 // id: Date.now(), // Gerado pelo Firebase
@@ -1411,29 +1422,53 @@
 
             if (window.firebaseDb) {
                 try {
-                    const docRef = await window.addDoc(window.collection(window.firebaseDb, "atletas"), p);
-                    console.log("Documento gravado com ID: ", docRef.id);
-                    p.id = docRef.id;
-                    players.push(p);
-                    alert("Atleta cadastrado com sucesso!");
+                    if (editId) {
+                        // UPDATE
+                        const ref = window.doc(window.firebaseDb, "atletas", editId);
+                        await window.updateDoc(ref, p);
+                        alert("Atleta atualizado com sucesso!");
+                        
+                        // Atualiza localmente
+                        const idx = players.findIndex(x => x.id === editId);
+                        if(idx > -1) players[idx] = { id: editId, ...p };
+                        
+                        e.target.removeAttribute('data-edit-id');
+                        document.getElementById('page-title').innerText = 'Novo Atleta';
+                        submitBtn.innerHTML = '<i data-lucide="send" class="w-6 h-6"></i> Cadastrar Atleta';
+                        submitBtn.classList.remove('bg-yellow-600');
+                    } else {
+                        // CREATE
+                        const docRef = await window.addDoc(window.collection(window.firebaseDb, "atletas"), p);
+                        console.log("Documento gravado com ID: ", docRef.id);
+                        p.id = docRef.id;
+                        players.push(p);
+                        alert("Atleta cadastrado com sucesso!");
+                    }
                     e.target.reset();
                     document.getElementById('cat-display').innerText = '-';
                     navigate('atletas');
                 } catch (e) {
-                    console.error("Erro ao adicionar documento: ", e);
+                    console.error("Erro ao salvar documento: ", e);
                     alert("Erro ao salvar no banco de dados: " + e.message);
                 }
             } else {
                 // Fallback local
-                p.id = Date.now();
-                players.push(p);
-                alert("Atleta cadastrado (Modo Local)!");
+                if (editId) {
+                   const idx = players.findIndex(x => x.id === editId);
+                   if(idx > -1) players[idx] = { id: editId, ...p };
+                   alert("Atleta atualizado (Modo Local)!");
+                   e.target.removeAttribute('data-edit-id');
+                } else {
+                   p.id = Date.now();
+                   players.push(p);
+                   alert("Atleta cadastrado (Modo Local)!");
+                }
                 e.target.reset();
                 navigate('atletas');
             }
             
             submitBtn.disabled = false;
-            submitBtn.innerHTML = originalText;
+            if (!editId) submitBtn.innerHTML = originalText;
             if(typeof lucide !== 'undefined') lucide.createIcons();
         };
 
@@ -1441,10 +1476,132 @@
         document.getElementById('atleta-filter-cat').onchange = renderAtletas;
         document.getElementById('relatorio-cat-filter').onchange = renderRelatorios;
 
+        // DELETE PLAYER
+        async function deletePlayer(id) {
+            if(!confirm("TEM CERTEZA? Essa ação não pode ser desfeita.")) return;
+            
+            if (window.firebaseDb) {
+                try {
+                    await window.firebaseDb.collection("atletas").doc(id).delete(); // Sintaxe V8/V9 compat
+                    // Ou sintaxe modular
+                    // await window.deleteDoc(window.doc(window.firebaseDb, "atletas", id));
+                } catch(e) {
+                    // Tenta modular se o de cima falhar ou vice versa, mas como estamos usando modular no import:
+                    try {
+                        await window.deleteDoc(window.doc(window.firebaseDb, "atletas", id));
+                    } catch(err) {
+                        console.error("Erro ao deletar", err);
+                        alert("Erro ao deletar: " + err.message);
+                        return;
+                    }
+                }
+            }
+            
+            // Remove local
+            const idx = players.findIndex(p => p.id === id);
+            if(idx > -1) players.splice(idx, 1);
+            
+            alert("Atleta removido com sucesso!");
+            closeModal();
+            renderAtletas();
+            renderDashboard();
+        }
+
+        // EDIT PLAYER (Preenche formulário)
+        function editPlayer(id) {
+            const p = players.find(x => x.id === id);
+            if(!p) return;
+
+            // Navega para cadastro
+            navigate('cadastro');
+            document.getElementById('page-title').innerText = 'Editar Atleta';
+            
+            // Preenche campos
+            const f = document.getElementById('cadastro-form');
+            f.setAttribute('data-edit-id', id); // Marca formulário como edição
+            
+            // Função auxiliar para setar valor
+            const setVal = (name, val) => {
+                const el = f.querySelector(`[name="${name}"]`);
+                if(el) el.value = val || '';
+            };
+
+            setVal('nome', p.nome);
+            setVal('cpf', p.cpf);
+            setVal('rg', p.rg);
+            setVal('dataNascimento', p.nascimento);
+            document.getElementById('cat-display').innerText = calcCat(p.nascimento);
+            setVal('posicao', p.posicao);
+            setVal('numeroCamisa', p.numeroCamisa);
+            
+            // Escola
+            if(p.escola) {
+                setVal('nomeEscola', p.escola.nome);
+                setVal('serie', p.escola.serie);
+                setVal('turno', p.escola.turno);
+            }
+            
+            // Endereço
+            if(p.endereco) {
+                setVal('cep', p.endereco.cep);
+                setVal('rua', p.endereco.rua);
+                setVal('endNumero', p.endereco.numero);
+                setVal('bairro', p.endereco.bairro);
+                setVal('cidade', p.endereco.cidade);
+                // Complemento se houver
+                setVal('complemento', p.endereco.complemento); 
+            }
+
+            // Uniforme
+            if(p.uniforme) {
+                setVal('camisa', p.uniforme.camisa);
+                setVal('calcao', p.uniforme.calcao);
+                setVal('meiao', p.uniforme.meiao);
+                setVal('calcado', p.uniforme.calcado);
+            }
+
+            // Contato
+            if(p.contato) {
+                setVal('mae', p.contato.mae);
+                setVal('foneMae', p.contato.foneMae);
+                setVal('cpfMae', p.contato.cpfMae); // Se existir
+                setVal('pai', p.contato.pai);
+                setVal('fonePai', p.contato.fonePai);
+                setVal('cpfPai', p.contato.cpfPai); // Se existir
+            }
+
+            // Saúde
+            if(p.saude) {
+                setVal('tipoSanguineo', p.saude.sangue);
+                setVal('planoSaude', p.saude.plano);
+                setVal('alergias', p.saude.alergias === 'Nenhuma' ? '' : p.saude.alergias);
+                setVal('medicamentos', p.saude.medicamentos === 'Nenhum' ? '' : p.saude.medicamentos);
+                setVal('cirurgias', p.saude.cirurgias === 'Nenhuma' ? '' : p.saude.cirurgias);
+                setVal('lesoes', p.saude.lesoes === 'Nenhuma' ? '' : p.saude.lesoes);
+            }
+
+            setVal('observacoes', p.observacoes);
+            
+            // Muda botão
+            const btn = f.querySelector('button[type="submit"]');
+            btn.innerHTML = '<i data-lucide="save" class="w-6 h-6"></i> Salvar Alterações';
+            btn.classList.remove('bg-emerald-600');
+            btn.classList.add('bg-yellow-600');
+            
+            closeModal();
+        }
+
         // MODAL
         function openPlayer(id) {
             const p = players.find(x => x.id === id);
             if(!p) return;
+            
+            // Configura botões de ação do modal
+            const btnEdit = document.getElementById('btn-edit-player');
+            const btnDel = document.getElementById('btn-delete-player');
+            if(btnEdit) btnEdit.onclick = () => editPlayer(id);
+            if(btnDel) btnDel.onclick = () => deletePlayer(id);
+
             document.getElementById('modal-name').innerText = p.nome;
             document.getElementById('modal-cat').innerText = `${calcCat(p.nascimento)} ${p.posicao ? '• '+p.posicao : ''} ${p.numeroCamisa ? '• Nº '+p.numeroCamisa : ''}`;
             const avatarEl = document.getElementById('modal-avatar');
