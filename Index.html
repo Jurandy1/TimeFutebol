@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sistema de Time | Gestão de Academia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #059669; border-radius: 10px; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .active-nav { background: #064e3b; border-left: 4px solid #f59e0b; color: white !important; }
+        .card-player { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-player:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+        .view-section { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .h-screen-safe { height: 100vh; height: calc(var(--vh, 1vh) * 100); }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; }
+        }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-slate-900 overflow-hidden">
+
+    <!-- TELA DE LOGIN -->
+    <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 px-4 overflow-hidden">
+        <div class="absolute inset-0 z-0">
+            <img src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1920&q=80" class="w-full h-full object-cover opacity-30" alt="Estádio">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
+        </div>
+        <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 sm:p-10 relative z-10 border border-slate-100">
+            <div class="flex flex-col items-center mb-8">
+                <div class="w-20 h-20 bg-emerald-600 rounded-2xl rotate-3 flex items-center justify-center shadow-xl shadow-emerald-600/20 mb-6">
+                    <i data-lucide="shield" class="w-10 h-10 text-white -rotate-3"></i>
+                </div>
+                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Sistema <span class="text-emerald-600 font-normal">de Time</span></h1>
+                <p class="text-slate-500 text-sm mt-1">Gestão Profissional de Categorias de Base</p>
+                <p class="text-slate-400 text-xs mt-0.5">feito por <span class="font-bold text-emerald-600">Jurandy</span></p>
+            </div>
+            <div id="login-error" class="hidden bg-rose-50 text-rose-600 p-4 rounded-xl mb-6 text-sm flex items-center gap-3 border border-rose-100">
+                <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
+                <span id="login-error-msg"></span>
+            </div>
+            <form id="login-form" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1">Utilizador</label>
+                    <div class="relative">
+                        <i data-lucide="user" class="absolute left-4 top-3.5 w-5 h-5 text-slate-400"></i>
+                        <input type="text" id="login-user" required class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none text-slate-700" placeholder="admin">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1">Senha</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="absolute left-4 top-3.5 w-5 h-5 text-slate-400"></i>
+                        <input type="password" id="login-pass" required class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none text-slate-700" placeholder="••••••">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-emerald-600/30 transform active:scale-[0.98] mt-4 flex items-center justify-center gap-2">
+                    Aceder ao Painel <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+            </form>
+            <p class="text-center text-[10px] text-slate-400 mt-8 tracking-widest uppercase">Admin: admin | Senha: 123456</p>
+        </div>
+    </div>
+
+    <!-- ESTRUTURA PRINCIPAL -->
+    <div id="main-app" class="hidden h-screen-safe overflow-hidden flex flex-col md:flex-row">
+        
+        <!-- SIDEBAR DESKTOP -->
+        <aside id="sidebar" class="flex flex-col w-72 bg-slate-900 text-slate-300 flex-shrink-0 z-50 transition-all relative no-print h-full
+            fixed inset-y-0 left-0 -translate-x-full md:translate-x-0 md:static md:flex transition-transform duration-300">
+            <!-- Overlay para fechar no mobile -->
+            <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden" onclick="closeSidebar()"></div>
+            <div class="p-8 flex items-center gap-3 border-b border-slate-800/50">
+                <div class="bg-emerald-500 p-2 rounded-lg shadow-lg shadow-emerald-500/20">
+                    <i data-lucide="shield" class="w-6 h-6 text-white"></i>
+                </div>
+                <span class="font-bold text-xl text-white tracking-tight">Sistema <span class="text-emerald-500">de Time</span></span>
+            </div>
+            <div class="flex-1 py-6 space-y-1 overflow-y-auto px-4">
+                <p class="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Menu Principal</p>
+                <button onclick="navigate('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all active-nav">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i> <span class="font-medium">Dashboard</span>
+                </button>
+                <button onclick="navigate('atletas')" id="nav-atletas" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800 hover:text-white mt-1">
+                    <i data-lucide="users" class="w-5 h-5"></i> <span class="font-medium">Elenco</span>
+                </button>
+                <button onclick="navigate('cadastro')" id="nav-cadastro" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800 hover:text-white mt-1">
+                    <i data-lucide="user-plus" class="w-5 h-5"></i> <span class="font-medium">Novo Atleta</span>
+                </button>
+                <button onclick="navigate('relatorios')" id="nav-relatorios" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800 hover:text-white mt-1">
+                    <i data-lucide="file-bar-chart" class="w-5 h-5"></i> <span class="font-medium">Relatórios</span>
+                </button>
+                <button onclick="navigate('presenca')" id="nav-presenca" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800 hover:text-white mt-1">
+                    <i data-lucide="calendar-check" class="w-5 h-5"></i> <span class="font-medium">Presença</span>
+                </button>
+            </div>
+            <div class="p-4 border-t border-slate-800">
+                <div class="bg-slate-800/50 rounded-2xl p-4 mb-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-bold text-white uppercase">AD</div>
+                        <div>
+                            <p class="text-xs font-bold text-white">Administrador</p>
+                            <p class="text-[10px] text-slate-500">Logado agora</p>
+                        </div>
+                    </div>
+                    <button onclick="logout()" class="w-full flex items-center justify-center gap-2 py-2 text-xs text-rose-400 hover:text-rose-300 transition-colors font-bold uppercase tracking-tighter">
+                        <i data-lucide="log-out" class="w-4 h-4"></i> Sair do Sistema
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- CONTEÚDO PRINCIPAL -->
+        <div class="flex-1 flex flex-col h-full overflow-hidden">
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 no-print flex-shrink-0 z-40">
+                <div class="flex items-center gap-4">
+                    <button id="mobile-menu-btn" class="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <h2 id="page-title" class="font-bold text-slate-800 text-lg hidden sm:block">Dashboard</h2>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Sistema Ativo
+                    </span>
+                    <span id="test-badge" class="hidden text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">Modo Teste</span>
+                </div>
+            </header>
+
+            <main id="content-area" class="flex-1 overflow-y-auto bg-[#f8fafc] p-4 sm:p-8">
+                
+                <!-- SEÇÃO: DASHBOARD -->
+                <div id="view-dashboard" class="view-section space-y-8"></div>
+
+                <!-- SEÇÃO: LISTAGEM ATLETAS -->
+                <div id="view-atletas" class="view-section hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h2 class="text-2xl font-black text-slate-900">Elenco Completo</h2>
+                            <p class="text-slate-500 text-sm">Gerencie as fichas e documentação dos seus atletas.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                            <div class="relative flex-1 sm:w-64">
+                                <i data-lucide="search" class="absolute left-3 top-2.5 w-5 h-5 text-slate-400"></i>
+                                <input type="text" id="atleta-search" placeholder="Buscar por nome..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm">
+                            </div>
+                            <select id="atleta-filter-cat" class="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:border-emerald-500 text-sm bg-white cursor-pointer">
+                                <option value="Todas">Todas</option>
+                                <option value="SUB 9">SUB 9</option><option value="SUB 11">SUB 11</option><option value="SUB 13">SUB 13</option><option value="SUB 15">SUB 15</option><option value="SUB 17">SUB 17</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="atletas-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-12"></div>
+                </div>
+
+                <!-- SEÇÃO: CADASTRO -->
+                <div id="view-cadastro" class="view-section hidden max-w-4xl mx-auto pb-24">
+                    <div class="mb-8">
+                        <h2 class="text-2xl font-black text-slate-900">Novo Cadastro</h2>
+                        <p class="text-slate-500">Crie uma nova ficha desportiva completa para o atleta.</p>
+                    </div>
+
+                    <form id="cadastro-form" class="space-y-6">
+                        <!-- Card: Dados Pessoais -->
+                        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
+                                <div class="p-2 bg-emerald-100 rounded-lg text-emerald-600"><i data-lucide="user" class="w-5 h-5"></i></div>
+                                <h3 class="font-bold text-slate-800 uppercase tracking-tight text-sm">Informação Pessoal & Foto</h3>
+                            </div>
+                            <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                <div class="lg:col-span-3">
+                                    <div id="photo-preview" class="aspect-square bg-slate-100 rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-200 transition-all overflow-hidden relative group">
+                                        <i data-lucide="camera" class="w-8 h-8 text-slate-400 group-hover:scale-110 transition-transform"></i>
+                                        <span class="text-[10px] font-bold text-slate-400 mt-2 uppercase">Subir Foto</span>
+                                        <input type="file" id="foto-input" class="absolute inset-0 opacity-0 cursor-pointer" accept="image/*">
+                                    </div>
+                                </div>
+                                <div class="lg:col-span-9 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="sm:col-span-2">
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nome Completo do Atleta</label>
+                                        <input required name="nome" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all" placeholder="Ex: Lucas Ferreira dos Santos">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Data de Nascimento</label>
+                                        <input required id="nasc-input" name="dataNascimento" type="date" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Categoria Prevista</label>
+                                        <div class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-emerald-600 flex justify-between items-center">
+                                            <span id="cat-display">-</span>
+                                            <i data-lucide="shield" class="w-4 h-4"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Posição em Campo</label>
+                                        <select name="posicao" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm">
+                                            <option value="">Selecione...</option>
+                                            <option>Goleiro</option><option>Zagueiro</option><option>Lateral Direito</option><option>Lateral Esquerdo</option><option>Volante</option><option>Meia</option><option>Atacante</option><option>Ponta Direita</option><option>Ponta Esquerda</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Número da Camisa</label>
+                                        <input name="numeroCamisa" type="number" min="1" max="99" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all" placeholder="Ex: 10">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card: Dados Escolares -->
+                        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
+                                <div class="p-2 bg-indigo-100 rounded-lg text-indigo-600"><i data-lucide="graduation-cap" class="w-5 h-5"></i></div>
+                                <h3 class="font-bold text-slate-800 uppercase tracking-tight text-sm">Informações Escolares</h3>
+                            </div>
+                            <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="sm:col-span-2">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nome da Escola</label>
+                                    <input name="nomeEscola" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all" placeholder="Ex: E.E. Professor João Alves">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Série / Ano</label>
+                                    <select name="serie" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none text-sm">
+                                        <option value="">Selecione...</option>
+                                        <option>1º Ano - Fund.</option><option>2º Ano - Fund.</option><option>3º Ano - Fund.</option><option>4º Ano - Fund.</option><option>5º Ano - Fund.</option><option>6º Ano - Fund.</option><option>7º Ano - Fund.</option><option>8º Ano - Fund.</option><option>9º Ano - Fund.</option><option>1º Ano - Médio</option><option>2º Ano - Médio</option><option>3º Ano - Médio</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Turno</label>
+                                    <select name="turno" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none text-sm">
+                                        <option value="">Selecione...</option>
+                                        <option>Manhã</option><option>Tarde</option><option>Noite</option><option>Integral</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card: Endereço -->
+                        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
+                                <div class="p-2 bg-orange-100 rounded-lg text-orange-600"><i data-lucide="map-pin" class="w-5 h-5"></i></div>
+                                <h3 class="font-bold text-slate-800 uppercase tracking-tight text-sm">Endereço Residencial</h3>
+                            </div>
+                            <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">CEP</label>
+                                    <input name="cep" type="text" maxlength="9" id="cep-input" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all" placeholder="00000-000">
+                                </div>
+                                <div class="sm:col-span-1">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Rua / Logradouro</label>
+                                    <input name="rua" id="rua-input" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all" placeholder="Ex: Rua das Flores">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Número</label>
+                                    <input name="endNumero" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all" placeholder="Ex: 123">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Complemento</label>
+                                    <input name="complemento" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all" placeholder="Apto, Bloco...">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Bairro</label>
+                                    <input name="bairro" id="bairro-input" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all" placeholder="Ex: Centro">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cidade / Estado</label>
+                                    <input name="cidade" id="cidade-input" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all" placeholder="Ex: São Paulo / SP">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Grid: Uniforme + Saúde -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Kit Uniforme -->
+                            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                                <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
+                                    <div class="p-2 bg-amber-100 rounded-lg text-amber-600"><i data-lucide="shirt" class="w-5 h-5"></i></div>
+                                    <h3 class="font-bold text-slate-800 uppercase tracking-tight text-sm">Kit Uniforme (Tamanhos)</h3>
+                                </div>
+                                <div class="p-6 grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Camisa</label>
+                                        <select name="camisa" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-amber-500 text-sm">
+                                            <option value="PP">PP</option><option value="P" selected>P</option><option value="M">M</option><option value="G">G</option><option value="GG">GG</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Calção</label>
+                                        <select name="calcao" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-amber-500 text-sm">
+                                            <option value="PP">PP</option><option value="P" selected>P</option><option value="M">M</option><option value="G">G</option><option value="GG">GG</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Meião</label>
+                                        <select name="meiao" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-amber-500 text-sm">
+                                            <option value="Infantil">Infantil</option><option value="Adulto">Adulto</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Calçado (Nº)</label>
+                                        <input name="calcado" type="number" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-amber-500 text-sm" placeholder="Ex: 38">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dados de Saúde AMPLIADO -->
+                            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                                <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
+                                    <div class="p-2 bg-rose-100 rounded-lg text-rose-600"><i data-lucide="heart-pulse" class="w-5 h-5"></i></div>
+                                    <h3 class="font-bold text-slate-800 uppercase tracking-tight text-sm">Saúde & Bem-Estar</h3>
+                                </div>
+                                <div class="p-6 space-y-4">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tipo Sanguíneo</label>
+                                            <select name="tipoSanguineo" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-rose-500 text-sm">
+                                                <option value="O+">O+</option><option value="A+">A+</option><option value="B+">B+</option><option value="AB+">AB+</option><option value="O-">O-</option><option value="A-">A-</option><option value="B-">B-</option><option value="AB-">AB-</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Plano de Saúde</label>
+                                            <input name="planoSaude" type="text" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-rose-500 text-sm" placeholder="Ex: Unimed">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Alergias / Restrições Alimentares</label>
+                                        <input name="alergias" type="text" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-rose-500 text-sm" placeholder="Ex: Nenhuma ou Rinite, Lactose...">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Medicamentos em Uso</label>
+                                        <input name="medicamentos" type="text" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-rose-500 text-sm" placeholder="Ex: Nenhum ou Ritalina 10mg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Histórico de Cirurgias</label>
+                                        <textarea name="cirurgias" rows="2" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-rose-500 text-sm resize-none" placeholder="Ex: Nenhuma. Ou: Menisco joelho direito - 2023"></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Lesões / Problemas de Saúde Gerais</label>
+                                        <textarea name="lesoes" rows="2" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-rose-500 text-sm resize-none" placeholder="Ex: Nenhum. Ou: Asma leve, usa bombinha."></textarea>
+                                    </div>
+                                    <div class="flex items-center gap-3 bg-rose-50 p-3 rounded-xl border border-rose-100">
+                                        <input type="checkbox" name="autorizaAtendimento" id="autorizaAtendimento" class="w-4 h-4 accent-rose-500">
+                                        <label for="autorizaAtendimento" class="text-xs font-bold text-rose-700 cursor-pointer">Autorizo atendimento médico de emergência</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Responsáveis -->
+                        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
+                                <div class="p-2 bg-blue-100 rounded-lg text-blue-600"><i data-lucide="phone" class="w-5 h-5"></i></div>
+                                <h3 class="font-bold text-slate-800 uppercase tracking-tight text-sm">Contatos dos Responsáveis</h3>
+                            </div>
+                            <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nome da Mãe</label>
+                                        <input name="mae" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">WhatsApp Mãe</label>
+                                        <input name="foneMae" type="tel" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500" placeholder="(DD) 99999-9999">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">CPF da Mãe</label>
+                                        <input name="cpfMae" type="text" maxlength="14" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500" placeholder="000.000.000-00">
+                                    </div>
+                                </div>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nome do Pai</label>
+                                        <input name="pai" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">WhatsApp Pai</label>
+                                        <input name="fonePai" type="tel" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500" placeholder="(DD) 99999-9999">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">CPF do Pai</label>
+                                        <input name="cpfPai" type="text" maxlength="14" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500" placeholder="000.000.000-00">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Anexar Documentos -->
+                        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
+                                <div class="p-2 bg-slate-200 rounded-lg text-slate-600"><i data-lucide="paperclip" class="w-5 h-5"></i></div>
+                                <h3 class="font-bold text-slate-800 uppercase tracking-tight text-sm">Documentação (RG / CPF)</h3>
+                            </div>
+                            <div class="p-6 flex flex-col sm:flex-row gap-4">
+                                <div class="flex-1 border-2 border-dashed border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-slate-50 cursor-pointer transition-colors group">
+                                    <i data-lucide="file-text" class="w-8 h-8 text-slate-300 group-hover:text-emerald-500 mb-2"></i>
+                                    <span class="text-xs font-bold text-slate-500 uppercase">Subir RG Atleta</span>
+                                    <input type="file" class="hidden">
+                                </div>
+                                <div class="flex-1 border-2 border-dashed border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-slate-50 cursor-pointer transition-colors group">
+                                    <i data-lucide="file-check" class="w-8 h-8 text-slate-300 group-hover:text-emerald-500 mb-2"></i>
+                                    <span class="text-xs font-bold text-slate-500 uppercase">Atestado Médico</span>
+                                    <input type="file" class="hidden">
+                                </div>
+                                <div class="flex-1 border-2 border-dashed border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-slate-50 cursor-pointer transition-colors group">
+                                    <i data-lucide="file-heart" class="w-8 h-8 text-slate-300 group-hover:text-rose-500 mb-2"></i>
+                                    <span class="text-xs font-bold text-slate-500 uppercase">Laudo Cirúrgico</span>
+                                    <input type="file" class="hidden">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Observações -->
+                        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
+                                <div class="p-2 bg-yellow-100 rounded-lg text-yellow-600"><i data-lucide="message-square" class="w-5 h-5"></i></div>
+                                <h3 class="font-bold text-slate-800 uppercase tracking-tight text-sm">Observações do Treinador</h3>
+                            </div>
+                            <div class="p-6">
+                                <textarea name="observacoes" rows="3" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-yellow-500 text-sm resize-none" placeholder="Notas sobre desempenho, comportamento, potencial..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-4">
+                            <button type="submit" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black px-12 py-4 rounded-2xl shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95">
+                                <i data-lucide="check-circle" class="w-6 h-6"></i> Finalizar Cadastro
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- SEÇÃO: RELATÓRIOS -->
+                <div id="view-relatorios" class="view-section hidden space-y-6">
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
+                            <div>
+                                <h2 class="text-2xl font-black text-slate-900">Relatórios Estruturais</h2>
+                                <p class="text-slate-500 text-sm">Gere tabelas completas para impressão ou exportação.</p>
+                            </div>
+                            <div class="flex gap-2 w-full sm:w-auto">
+                                <select id="relatorio-cat-filter" class="px-4 py-2 rounded-xl border border-slate-200 text-sm outline-none bg-slate-50">
+                                    <option value="Todas">Todas as Categorias</option>
+                                    <option value="SUB 9">SUB 9</option><option value="SUB 11">SUB 11</option><option value="SUB 13">SUB 13</option><option value="SUB 15">SUB 15</option><option value="SUB 17">SUB 17</option>
+                                </select>
+                                <button onclick="exportCSV()" class="p-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors shadow-lg" title="Exportar CSV">
+                                    <i data-lucide="download" class="w-5 h-5"></i>
+                                </button>
+                                <button onclick="window.print()" class="p-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors shadow-lg">
+                                    <i data-lucide="printer" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse min-w-[1000px]">
+                                <thead>
+                                    <tr class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                        <th class="py-4 px-6">Atleta</th>
+                                        <th class="py-4 px-6">Categoria</th>
+                                        <th class="py-4 px-6">Nascimento</th>
+                                        <th class="py-4 px-6">Escola / Turno</th>
+                                        <th class="py-4 px-6">Uniforme</th>
+                                        <th class="py-4 px-6">Principal Contato</th>
+                                        <th class="py-4 px-6">Status Saúde</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="relatorio-table" class="text-sm divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                        <div class="p-4 bg-slate-50 flex justify-between items-center no-print">
+                            <span class="text-xs font-bold text-slate-400">Total: <span id="relatorio-count" class="text-slate-900">0</span> Atletas</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO: PRESENÇA -->
+                <div id="view-presenca" class="view-section hidden space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-black text-slate-900">Controle de Presença</h2>
+                        <p class="text-slate-500 text-sm">Registre a presença dos atletas nos treinos.</p>
+                    </div>
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row gap-4 items-center justify-between no-print">
+                            <div class="flex items-center gap-3">
+                                <label class="text-xs font-bold text-slate-500 uppercase">Data do Treino:</label>
+                                <input type="date" id="data-treino" class="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:border-emerald-500 text-sm">
+                            </div>
+                            <button onclick="salvarPresenca()" class="bg-emerald-600 text-white font-bold px-6 py-2 rounded-xl text-sm hover:bg-emerald-700 transition-colors flex items-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i> Salvar Presença
+                            </button>
+                        </div>
+                        <div id="presenca-list" class="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"></div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL DETALHES -->
+    <div id="player-modal" class="fixed inset-0 z-[110] hidden items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
+        <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div id="modal-header" class="p-6 bg-emerald-600 text-white flex justify-between items-center flex-shrink-0">
+                <div class="flex items-center gap-4">
+                    <div id="modal-avatar" class="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-black uppercase"></div>
+                    <div>
+                        <h3 id="modal-name" class="font-bold text-xl leading-none">Nome do Atleta</h3>
+                        <p id="modal-cat" class="text-emerald-100 text-xs mt-1 font-bold uppercase tracking-widest">SUB 13</p>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center hover:bg-black/20 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="modal-content" class="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50"></div>
+            <div class="p-4 border-t border-slate-100 bg-white flex justify-end gap-3 flex-shrink-0">
+                <button onclick="closeModal()" class="px-6 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-200 transition-all">Fechar</button>
+                <button onclick="window.print()" class="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-xl text-sm shadow-lg hover:shadow-slate-900/30 flex items-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Ficha
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CURRENT_YEAR = 2026;
+        const TEST_MODE = (new URLSearchParams(location.search).has('test')) || (new URLSearchParams(location.search).get('modo') === 'teste') || (location.hash.toLowerCase().includes('test'));
+        const parseDate = (s) => {
+            if (!s) return null;
+            const parts = s.includes('-') ? s.split('-') : s.split('/');
+            if (parts.length === 3) {
+                const y = parseInt(parts[0], 10);
+                const m = parseInt(parts[1], 10);
+                const d = parseInt(parts[2], 10);
+                const dt = new Date(y, m - 1, d);
+                return isNaN(dt.getTime()) ? null : dt;
+            }
+            const dt2 = new Date(s);
+            return isNaN(dt2.getTime()) ? null : dt2;
+        };
+        
+        let players = [
+            { id: 1, nome: 'Enzo Gabriel Santos', foto: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSx1MZQh5_RlH8EVfzY-zH37wJhnnYYBLRE3A&s', nascimento: '2018-04-12', posicao: 'Goleiro', numeroCamisa: '1', uniforme: { camisa: 'P', calcao: 'P', meiao: 'Infantil', calcado: 32 }, contato: { mae: 'Maria Souza', foneMae: '(11) 98888-1111', pai: 'João Santos', fonePai: '(11) 98888-2222' }, saude: { sangue: 'O+', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Unimed', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. José Alves', serie: '2º Ano - Fund.', turno: 'Manhã' }, endereco: { cep: '01310-100', rua: 'Av. Paulista', numero: '1000', bairro: 'Bela Vista', cidade: 'São Paulo / SP' }, status: 'Ativo' },
+            { id: 2, nome: 'Miguel Oliveira', foto: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQDBkyZpwPl2b30FoEd_J_OtAmdFVx0Sd517A&s', nascimento: '2017-08-22', posicao: 'Meia', numeroCamisa: '10', uniforme: { camisa: 'P', calcao: 'P', meiao: 'Infantil', calcado: 34 }, contato: { mae: 'Carla Oliveira', foneMae: '(11) 97777-1111', pai: '', fonePai: '' }, saude: { sangue: 'A+', alergias: 'Amendoim', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Bradesco Saúde', medicamentos: 'Nenhum' }, escola: { nome: 'E.M. Santos Dumont', serie: '3º Ano - Fund.', turno: 'Tarde' }, endereco: { cep: '02020-020', rua: 'Rua das Flores', numero: '200', bairro: 'Santana', cidade: 'São Paulo / SP' }, status: 'Ativo' },
+            { id: 3, nome: 'Arthur Lima Silva', nascimento: '2016-03-15', posicao: 'Atacante', numeroCamisa: '9', uniforme: { camisa: 'M', calcao: 'M', meiao: 'Infantil', calcado: 35 }, contato: { mae: 'Aline Lima', foneMae: '(11) 96666-1111', pai: 'Ricardo Silva', fonePai: '(11) 96666-2222' }, saude: { sangue: 'B+', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: '', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. Rui Barbosa', serie: '4º Ano - Fund.', turno: 'Manhã' }, endereco: { cep: '03100-000', rua: 'Rua Vergueiro', numero: '500', bairro: 'Vila Mariana', cidade: 'São Paulo / SP' }, status: 'Ativo' },
+            { id: 4, nome: 'Heitor Garcia', nascimento: '2015-11-30', posicao: 'Zagueiro', numeroCamisa: '4', uniforme: { camisa: 'G', calcao: 'G', meiao: 'Infantil', calcado: 37 }, contato: { mae: 'Lúcia Garcia', foneMae: '(11) 95555-1111', pai: 'Marcos Garcia', fonePai: '' }, saude: { sangue: 'O-', alergias: 'Lactose', cirurgias: 'Artroscopia joelho direito - 2024', lesoes: 'Joelho direito em recuperação', plano: 'Sul América', medicamentos: 'Anti-inflamatório pós cirurgia' }, escola: { nome: 'E.E. Castro Alves', serie: '5º Ano - Fund.', turno: 'Manhã' }, endereco: { cep: '04000-000', rua: 'Rua da Consolação', numero: '300', bairro: 'Consolação', cidade: 'São Paulo / SP' }, status: 'Afastado' },
+            { id: 5, nome: 'Davi Lucca Ribeiro', nascimento: '2015-02-05', posicao: 'Volante', numeroCamisa: '5', uniforme: { camisa: 'M', calcao: 'M', meiao: 'Infantil', calcado: 36 }, contato: { mae: 'Fernanda Ribeiro', foneMae: '(11) 94444-1111', pai: 'André Ribeiro', fonePai: '(11) 94444-2222' }, saude: { sangue: 'AB+', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Amil', medicamentos: 'Nenhum' }, escola: { nome: 'E.M. João Pessoa', serie: '6º Ano - Fund.', turno: 'Tarde' }, endereco: { cep: '05000-000', rua: 'Av. Faria Lima', numero: '800', bairro: 'Pinheiros', cidade: 'São Paulo / SP' }, status: 'Ativo' },
+            { id: 6, nome: 'Gabriel Jesus Moreira', nascimento: '2014-07-12', posicao: 'Atacante', numeroCamisa: '11', uniforme: { camisa: 'P', calcao: 'P', meiao: 'Adulto', calcado: 38 }, contato: { mae: 'Patrícia Moreira', foneMae: '(11) 93333-1111', pai: '', fonePai: '' }, saude: { sangue: 'A-', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: '', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. Tiradentes', serie: '7º Ano - Fund.', turno: 'Manhã' }, endereco: { cep: '06000-000', rua: 'Rua Teodoro Sampaio', numero: '120', bairro: 'Pinheiros', cidade: 'São Paulo / SP' }, status: 'Ativo' },
+            { id: 7, nome: 'Bernardo Costa', nascimento: '2013-09-18', posicao: 'Lateral Direito', numeroCamisa: '2', uniforme: { camisa: 'M', calcao: 'M', meiao: 'Adulto', calcado: 39 }, contato: { mae: 'Letícia Costa', foneMae: '(11) 92222-1111', pai: 'Vitor Costa', fonePai: '(11) 92222-2222' }, saude: { sangue: 'O+', alergias: 'Gramíneas', cirurgias: 'Nenhuma', lesoes: 'Asma leve - usa bombinha', plano: 'Unimed', medicamentos: 'Salbutamol spray' }, escola: { nome: 'E.E. Dom Pedro I', serie: '8º Ano - Fund.', turno: 'Tarde' }, endereco: { cep: '07000-000', rua: 'Rua Haddock Lobo', numero: '450', bairro: 'Cerqueira César', cidade: 'São Paulo / SP' }, status: 'Ativo' },
+            { id: 8, nome: 'Samuel Pereira', nascimento: '2013-02-25', posicao: 'Volante', numeroCamisa: '6', uniforme: { camisa: 'M', calcao: 'M', meiao: 'Adulto', calcado: 40 }, contato: { mae: 'Tati Pereira', foneMae: '(11) 91111-1111', pai: '', fonePai: '' }, saude: { sangue: 'B-', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Bradesco Saúde', medicamentos: 'Nenhum' }, escola: { nome: 'E.M. Villa Lobos', serie: '9º Ano - Fund.', turno: 'Manhã' }, endereco: { cep: '08000-000', rua: 'Av. Ibirapuera', numero: '2000', bairro: 'Moema', cidade: 'São Paulo / SP' }, status: 'Ativo' },
+            { id: 9, nome: 'João Miguel Gomes', nascimento: '2012-12-01', posicao: 'Meia', numeroCamisa: '8', uniforme: { camisa: 'G', calcao: 'G', meiao: 'Adulto', calcado: 41 }, contato: { mae: 'Bia Gomes', foneMae: '(21) 99999-0000', pai: 'Carlos Gomes', fonePai: '' }, saude: { sangue: 'O+', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: '', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. Machado de Assis', serie: '1º Ano - Médio', turno: 'Manhã' }, endereco: { cep: '20000-000', rua: 'Rua da Quitanda', numero: '10', bairro: 'Centro', cidade: 'Rio de Janeiro / RJ' }, status: 'Ativo' },
+            { id: 10, nome: 'Pietro Alves', nascimento: '2011-04-14', posicao: 'Zagueiro', numeroCamisa: '3', uniforme: { camisa: 'G', calcao: 'G', meiao: 'Adulto', calcado: 41 }, contato: { mae: 'Aline Alves', foneMae: '(21) 98888-0000', pai: 'Fábio Alves', fonePai: '(21) 98888-1111' }, saude: { sangue: 'A+', alergias: 'Abelha', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Sul América', medicamentos: 'Carrega EpiPen (alergia grave)' }, escola: { nome: 'E.E. Gonçalves Dias', serie: '2º Ano - Médio', turno: 'Manhã' }, endereco: { cep: '21000-000', rua: 'Rua Voluntários da Pátria', numero: '150', bairro: 'Botafogo', cidade: 'Rio de Janeiro / RJ' }, status: 'Ativo' },
+            { id: 11, nome: 'Lorenzo Fernandes', nascimento: '2011-10-08', posicao: 'Lateral Esquerdo', numeroCamisa: '6', uniforme: { camisa: 'M', calcao: 'M', meiao: 'Adulto', calcado: 40 }, contato: { mae: 'Joana Fern.', foneMae: '(21) 97777-0000', pai: 'Luis Fern.', fonePai: '' }, saude: { sangue: 'O+', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Amil', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. Olavo Bilac', serie: '2º Ano - Médio', turno: 'Tarde' }, endereco: { cep: '22000-000', rua: 'Av. Atlântica', numero: '500', bairro: 'Copacabana', cidade: 'Rio de Janeiro / RJ' }, status: 'Ativo' },
+            { id: 12, nome: 'Lucas Neto', nascimento: '2010-06-20', posicao: 'Atacante', numeroCamisa: '7', uniforme: { camisa: 'GG', calcao: 'GG', meiao: 'Adulto', calcado: 42 }, contato: { mae: 'Mara Neto', foneMae: '(21) 96666-0000', pai: 'André Neto', fonePai: '(21) 96666-1111' }, saude: { sangue: 'AB-', alergias: 'Miopia', cirurgias: 'Nenhuma', lesoes: 'Usa óculos fora do campo', plano: 'Unimed', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. Santos Dumont', serie: '3º Ano - Médio', turno: 'Manhã' }, endereco: { cep: '23000-000', rua: 'Rua Marquês de São Vicente', numero: '300', bairro: 'Gávea', cidade: 'Rio de Janeiro / RJ' }, status: 'Ativo' },
+            { id: 13, nome: 'Matheus Barbosa', nascimento: '2009-08-05', posicao: 'Ponta Direita', numeroCamisa: '7', uniforme: { camisa: 'G', calcao: 'G', meiao: 'Adulto', calcado: 43 }, contato: { mae: 'Eva Barbosa', foneMae: '(21) 95555-0000', pai: 'Igor Barbosa', fonePai: '' }, saude: { sangue: 'O+', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: '', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. Pedro Álvares Cabral', serie: '3º Ano - Médio', turno: 'Tarde' }, endereco: { cep: '24000-000', rua: 'Rua das Palmeiras', numero: '88', bairro: 'Niterói Centro', cidade: 'Niterói / RJ' }, status: 'Ativo' },
+            { id: 14, nome: 'Nicolas Schmidt', nascimento: '2009-11-11', posicao: 'Volante', numeroCamisa: '5', uniforme: { camisa: 'M', calcao: 'M', meiao: 'Adulto', calcado: 41 }, contato: { mae: 'Katia Schmidt', foneMae: '(21) 94444-0000', pai: 'Rolf Schmidt', fonePai: '(21) 94444-1111' }, saude: { sangue: 'A+', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Bradesco Saúde', medicamentos: 'Nenhum' }, escola: { nome: 'E.M. Duque de Caxias', serie: '3º Ano - Médio', turno: 'Manhã' }, endereco: { cep: '25000-000', rua: 'Av. Getúlio Vargas', numero: '400', bairro: 'Centro', cidade: 'Duque de Caxias / RJ' }, status: 'Ativo' },
+            { id: 15, nome: 'Rafael Vaz', nascimento: '2009-01-30', posicao: 'Goleiro', numeroCamisa: '12', uniforme: { camisa: 'GG', calcao: 'GG', meiao: 'Adulto', calcado: 44 }, contato: { mae: 'Clara Vaz', foneMae: '(21) 93333-0000', pai: 'Jorge Vaz', fonePai: '(21) 93333-1111' }, saude: { sangue: 'O-', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Amil', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. Tiradentes', serie: '3º Ano - Médio', turno: 'Tarde' }, endereco: { cep: '26000-000', rua: 'Rua XV de Novembro', numero: '55', bairro: 'Centro', cidade: 'Nova Iguaçu / RJ' }, status: 'Ativo' }
+        ];
+
+        const calcCat = (nasc) => {
+            if (!nasc) return '-';
+            const d = parseDate(nasc);
+            if (!d) return '-';
+            const age = CURRENT_YEAR - d.getFullYear();
+            if (age <= 9) return 'SUB 9';
+            if (age <= 11) return 'SUB 11';
+            if (age <= 13) return 'SUB 13';
+            if (age <= 15) return 'SUB 15';
+            if (age <= 17) return 'SUB 17';
+            return 'EXCEDIDO';
+        };
+
+        const getAvatar = (name) => name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+        const getAvatarHTML = (p, sizeClass = 'w-20 h-20', textClass = 'text-xl') => {
+            if (p.foto) {
+                return `<img src="${p.foto}" alt="${p.nome}" class="${sizeClass} rounded-2xl object-cover border-4 border-white shadow-xl">`;
+            }
+            return `<div class="${sizeClass} rounded-2xl bg-white shadow-xl border-4 border-white flex items-center justify-center ${textClass} font-black text-emerald-600 uppercase">${getAvatar(p.nome)}</div>`;
+        };
+
+        // LOGIN
+        document.getElementById('login-form').onsubmit = (e) => {
+            e.preventDefault();
+            const u = document.getElementById('login-user').value;
+            const p = document.getElementById('login-pass').value;
+            if(u === 'admin' && p === '123456') {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                updateVH(); // Força recalculado de altura no mobile
+                navigate('dashboard');
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+                document.getElementById('login-error-msg').innerText = "Credenciais incorretas!";
+            }
+        };
+
+        function logout() { window.location.reload(); }
+
+        function navigate(view) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            const titles = { dashboard: 'Dashboard', atletas: 'Elenco', cadastro: 'Novo Atleta', relatorios: 'Relatórios', presenca: 'Presença' };
+            document.getElementById('page-title').innerText = titles[view] || view;
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                b.classList.remove('active-nav');
+                b.classList.add('text-slate-400', 'hover:bg-slate-800');
+            });
+            const navEl = document.getElementById(`nav-${view}`);
+            if (navEl) {
+                navEl.classList.add('active-nav');
+                navEl.classList.remove('text-slate-400', 'hover:bg-slate-800');
+            }
+            closeSidebar();
+            if(view === 'dashboard') renderDashboard();
+            if(view === 'atletas') renderAtletas();
+            if(view === 'relatorios') renderRelatorios();
+            if(view === 'presenca') renderPresenca();
+        }
+
+        function openSidebar() {
+            const s = document.getElementById('sidebar');
+            const o = document.getElementById('sidebar-overlay');
+            s.classList.remove('-translate-x-full');
+            s.classList.add('translate-x-0');
+            o.classList.remove('hidden');
+        }
+
+        function closeSidebar() {
+            const s = document.getElementById('sidebar');
+            const o = document.getElementById('sidebar-overlay');
+            s.classList.add('-translate-x-full');
+            s.classList.remove('translate-x-0');
+            o.classList.add('hidden');
+        }
+
+        document.getElementById('mobile-menu-btn').onclick = () => {
+            const s = document.getElementById('sidebar');
+            if (s.classList.contains('-translate-x-full')) {
+                openSidebar();
+            } else {
+                closeSidebar();
+            }
+        };
+
+        function renderDashboard() {
+            const dash = document.getElementById('view-dashboard');
+            const total = players.length;
+            const ativos = players.filter(p => p.status === 'Ativo').length;
+            const cats = ['SUB 9', 'SUB 11', 'SUB 13', 'SUB 15', 'SUB 17'];
+            const afastados = total - ativos;
+            const comCirurgia = players.filter(p => p.saude.cirurgias && p.saude.cirurgias !== 'Nenhuma').length;
+
+            let html = `
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+                        <div class="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20"><i data-lucide="users"></i></div>
+                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Total Elenco</p><h3 class="text-3xl font-black text-slate-900 leading-none mt-1">${total}</h3></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+                        <div class="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20"><i data-lucide="check-circle"></i></div>
+                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Atletas Ativos</p><h3 class="text-3xl font-black text-slate-900 leading-none mt-1">${ativos}</h3></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+                        <div class="w-14 h-14 bg-rose-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-rose-500/20"><i data-lucide="alert-triangle"></i></div>
+                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Afastados</p><h3 class="text-3xl font-black text-slate-900 leading-none mt-1">${afastados}</h3></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+                        <div class="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-purple-500/20"><i data-lucide="stethoscope"></i></div>
+                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Hist. Cirurgia</p><h3 class="text-3xl font-black text-slate-900 leading-none mt-1">${comCirurgia}</h3></div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                    <h3 class="font-black text-slate-800 text-lg mb-6">Ocupação por Categoria</h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-6">
+                        ${cats.map(c => {
+                            const count = players.filter(p => calcCat(p.nascimento) === c).length;
+                            const perc = total > 0 ? (count / total) * 100 : 0;
+                            return `
+                                <div class="flex flex-col items-center">
+                                    <div class="w-full bg-slate-100 h-24 rounded-2xl overflow-hidden flex flex-col justify-end relative">
+                                        <div class="bg-emerald-500 w-full transition-all duration-1000" style="height: ${perc}%"></div>
+                                        <span class="absolute inset-0 flex items-center justify-center font-black text-slate-400 text-sm">${count}</span>
+                                    </div>
+                                    <p class="mt-3 font-bold text-xs text-slate-500">${c}</p>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                    <h3 class="font-black text-slate-800 text-lg mb-6">Alertas de Saúde</h3>
+                    <div class="space-y-3">
+                        ${players.filter(p => p.saude.alergias !== 'Nenhuma' || (p.saude.cirurgias && p.saude.cirurgias !== 'Nenhuma') || (p.saude.lesoes && p.saude.lesoes !== 'Nenhuma')).map(p => `
+                            <div class="flex items-start gap-3 p-4 bg-rose-50 rounded-2xl border border-rose-100">
+                                <div class="w-8 h-8 rounded-xl bg-rose-500 flex items-center justify-center text-white font-black text-xs flex-shrink-0">${getAvatar(p.nome)}</div>
+                                <div>
+                                    <p class="font-bold text-slate-800 text-sm">${p.nome} <span class="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full ml-1">${calcCat(p.nascimento)}</span></p>
+                                    ${p.saude.alergias !== 'Nenhuma' ? `<p class="text-xs text-rose-600 mt-0.5">⚠ Alergia: ${p.saude.alergias}</p>` : ''}
+                                    ${p.saude.cirurgias && p.saude.cirurgias !== 'Nenhuma' ? `<p class="text-xs text-purple-600 mt-0.5">🏥 Cirurgia: ${p.saude.cirurgias}</p>` : ''}
+                                    ${p.saude.lesoes && p.saude.lesoes !== 'Nenhuma' ? `<p class="text-xs text-amber-600 mt-0.5">🩹 Lesão/Condição: ${p.saude.lesoes}</p>` : ''}
+                                </div>
+                            </div>
+                        `).join('') || '<p class="text-slate-400 text-sm text-center py-4">Nenhum alerta de saúde no momento.</p>'}
+                    </div>
+                </div>
+            `;
+            dash.innerHTML = html;
+            safeCreateIcons();
+        }
+
+        function renderAtletas() {
+            const grid = document.getElementById('atletas-grid');
+            const search = document.getElementById('atleta-search').value.toLowerCase();
+            const filter = document.getElementById('atleta-filter-cat').value;
+            const filtered = players.filter(p => p.nome.toLowerCase().includes(search) && (filter === 'Todas' || calcCat(p.nascimento) === filter));
+
+            grid.innerHTML = filtered.map(p => `
+                <div class="card-player bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col group">
+                    <div class="h-24 bg-slate-100 p-4 flex justify-between items-start relative overflow-hidden">
+                        <div class="absolute inset-0 opacity-10 flex items-center justify-center -rotate-12 translate-x-4">
+                             <i data-lucide="shield" class="w-32 h-32 text-slate-900"></i>
+                        </div>
+                        <span class="bg-emerald-600 text-white text-[10px] font-black px-3 py-1 rounded-full relative z-10">${calcCat(p.nascimento)}</span>
+                        <span class="bg-white/80 backdrop-blur text-slate-600 text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-200 relative z-10 ${p.status === 'Afastado' ? 'text-rose-500 border-rose-200 bg-rose-50/80' : ''}">${p.status}</span>
+                    </div>
+                    <div class="px-6 pb-6 flex-1 flex flex-col items-center -mt-10 relative z-10">
+                        <div class="mb-4 group-hover:scale-110 transition-transform">
+                            ${p.foto
+                                ? `<img src="${p.foto}" alt="${p.nome}" class="w-20 h-20 rounded-2xl object-cover border-4 border-white shadow-xl">`
+                                : `<div class="w-20 h-20 rounded-2xl bg-white shadow-xl border-4 border-white flex items-center justify-center text-xl font-black text-emerald-600 uppercase">${getAvatar(p.nome)}</div>`
+                            }
+                        </div>
+                        <h4 class="font-extrabold text-slate-900 text-lg leading-tight text-center truncate w-full mb-1">${p.nome}</h4>
+                        <p class="text-xs text-slate-400 font-bold mb-1">${new Date(p.nascimento).getFullYear()}</p>
+                        <p class="text-xs text-emerald-600 font-bold mb-4">${p.posicao || ''} ${p.numeroCamisa ? '• Nº '+p.numeroCamisa : ''}</p>
+                        ${p.saude.alergias !== 'Nenhuma' ? `<span class="text-[10px] bg-rose-50 text-rose-500 border border-rose-100 px-2 py-0.5 rounded-full font-bold mb-2">⚠ ${p.saude.alergias}</span>` : ''}
+                        <button onclick="openPlayer(${p.id})" class="w-full py-2.5 bg-slate-900 hover:bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all mt-auto">Ver Ficha Completa</button>
+                    </div>
+                </div>
+            `).join('');
+            safeCreateIcons();
+        }
+
+        function renderRelatorios() {
+            const table = document.getElementById('relatorio-table');
+            const filter = document.getElementById('relatorio-cat-filter').value;
+            const filtered = players.filter(p => filter === 'Todas' || calcCat(p.nascimento) === filter);
+            document.getElementById('relatorio-count').innerText = filtered.length;
+            table.innerHTML = filtered.map(p => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="py-4 px-6 font-bold text-slate-900">${p.nome}</td>
+                    <td class="py-4 px-6"><span class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded-lg font-bold text-xs">${calcCat(p.nascimento)}</span></td>
+                    <td class="py-4 px-6 text-slate-500">${p.nascimento.split('-').reverse().join('/')}</td>
+                    <td class="py-4 px-6 text-slate-500 text-xs">${p.escola ? `${p.escola.nome || '-'}<br><span class="font-bold text-slate-400">${p.escola.serie || ''} • ${p.escola.turno || ''}</span>` : '-'}</td>
+                    <td class="py-4 px-6 text-slate-500 text-xs font-bold">Cam:${p.uniforme.camisa} | Chut:${p.uniforme.calcado}</td>
+                    <td class="py-4 px-6 text-slate-600 font-medium">${p.contato.foneMae || p.contato.fonePai || 'N/A'}</td>
+                    <td class="py-4 px-6 text-xs">
+                        ${p.saude.alergias !== 'Nenhuma' ? `<span class="text-rose-500 font-bold block">⚠ ${p.saude.alergias}</span>` : ''}
+                        ${p.saude.cirurgias && p.saude.cirurgias !== 'Nenhuma' ? `<span class="text-purple-500 font-bold block">🏥 Cirurgia</span>` : ''}
+                        ${p.saude.alergias === 'Nenhuma' && (!p.saude.cirurgias || p.saude.cirurgias === 'Nenhuma') ? '<span class="text-emerald-500 font-bold">✓ OK</span>' : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPresenca() {
+            const list = document.getElementById('presenca-list');
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('data-treino').value = today;
+            list.innerHTML = players.map(p => `
+                <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-sm font-black text-emerald-600">${getAvatar(p.nome)}</div>
+                        <div>
+                            <p class="font-bold text-slate-800 text-sm">${p.nome}</p>
+                            <p class="text-[10px] text-slate-400 font-bold">${calcCat(p.nascimento)} ${p.posicao ? '• '+p.posicao : ''}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="togglePresenca(this, 'presente')" class="presenca-btn px-3 py-1.5 rounded-lg text-xs font-black transition-all bg-white border border-slate-200 text-slate-400 hover:bg-emerald-500 hover:text-white hover:border-emerald-500" data-id="${p.id}" data-status="ausente">✓ Presente</button>
+                        <button onclick="toggleFalta(this)" class="px-3 py-1.5 rounded-lg text-xs font-black transition-all bg-white border border-slate-200 text-slate-400 hover:bg-rose-500 hover:text-white hover:border-rose-500" data-id="${p.id}">✗ Falta</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function togglePresenca(btn) {
+            const allBtns = btn.parentElement.querySelectorAll('button');
+            allBtns.forEach(b => { b.classList.remove('bg-emerald-500', 'text-white', 'border-emerald-500', 'bg-rose-500', 'border-rose-500'); b.classList.add('bg-white', 'text-slate-400', 'border-slate-200'); });
+            btn.classList.add('bg-emerald-500', 'text-white', 'border-emerald-500');
+            btn.classList.remove('bg-white', 'text-slate-400');
+        }
+        function toggleFalta(btn) {
+            const allBtns = btn.parentElement.querySelectorAll('button');
+            allBtns.forEach(b => { b.classList.remove('bg-emerald-500', 'text-white', 'border-emerald-500', 'bg-rose-500', 'border-rose-500'); b.classList.add('bg-white', 'text-slate-400', 'border-slate-200'); });
+            btn.classList.add('bg-rose-500', 'text-white', 'border-rose-500');
+            btn.classList.remove('bg-white', 'text-slate-400');
+        }
+        function salvarPresenca() {
+            const data = document.getElementById('data-treino').value;
+            alert(`Presença do treino do dia ${data.split('-').reverse().join('/')} salva com sucesso!`);
+        }
+
+        // CEP auto-fill (simulado)
+        document.getElementById('cep-input') && document.getElementById('cep-input').addEventListener('blur', function() {
+            const cep = this.value.replace(/\D/g,'');
+            if (cep.length === 8) {
+                fetch(`https://viacep.com.br/ws/${cep}/json/`).then(r=>r.json()).then(d=>{
+                    if (!d.erro) {
+                        document.getElementById('rua-input').value = d.logradouro || '';
+                        document.getElementById('bairro-input').value = d.bairro || '';
+                        document.getElementById('cidade-input').value = `${d.localidade} / ${d.uf}`;
+                    }
+                }).catch(()=>{});
+            }
+        });
+
+        // FORM SUBMIT
+        document.getElementById('nasc-input').oninput = (e) => {
+            document.getElementById('cat-display').innerText = calcCat(e.target.value);
+        };
+
+        document.getElementById('cadastro-form').onsubmit = (e) => {
+            e.preventDefault();
+            const f = new FormData(e.target);
+            const p = {
+                id: Date.now(),
+                nome: f.get('nome'),
+                nascimento: f.get('dataNascimento'),
+                posicao: f.get('posicao'),
+                numeroCamisa: f.get('numeroCamisa'),
+                status: 'Ativo',
+                uniforme: { camisa: f.get('camisa'), calcao: f.get('calcao'), meiao: f.get('meiao'), calcado: f.get('calcado') },
+                contato: { mae: f.get('mae'), foneMae: f.get('foneMae'), pai: f.get('pai'), fonePai: f.get('fonePai') },
+                saude: { sangue: f.get('tipoSanguineo'), alergias: f.get('alergias') || 'Nenhuma', cirurgias: f.get('cirurgias') || 'Nenhuma', lesoes: f.get('lesoes') || 'Nenhuma', plano: f.get('planoSaude') || '', medicamentos: f.get('medicamentos') || 'Nenhum' },
+                escola: { nome: f.get('nomeEscola'), serie: f.get('serie'), turno: f.get('turno') },
+                endereco: { cep: f.get('cep'), rua: f.get('rua'), numero: f.get('endNumero'), bairro: f.get('bairro'), cidade: f.get('cidade') },
+                observacoes: f.get('observacoes')
+            };
+            players.push(p);
+            alert("Atleta cadastrado com sucesso!");
+            e.target.reset();
+            document.getElementById('cat-display').innerText = '-';
+            navigate('atletas');
+        };
+
+        document.getElementById('atleta-search').oninput = renderAtletas;
+        document.getElementById('atleta-filter-cat').onchange = renderAtletas;
+        document.getElementById('relatorio-cat-filter').onchange = renderRelatorios;
+
+        // MODAL
+        function openPlayer(id) {
+            const p = players.find(x => x.id === id);
+            if(!p) return;
+            document.getElementById('modal-name').innerText = p.nome;
+            document.getElementById('modal-cat').innerText = `${calcCat(p.nascimento)} ${p.posicao ? '• '+p.posicao : ''} ${p.numeroCamisa ? '• Nº '+p.numeroCamisa : ''}`;
+            const avatarEl = document.getElementById('modal-avatar');
+            if (p.foto) {
+                avatarEl.innerHTML = `<img src="${p.foto}" alt="${p.nome}" class="w-16 h-16 rounded-2xl object-cover">`;
+                avatarEl.classList.remove('text-2xl', 'font-black', 'uppercase');
+            } else {
+                avatarEl.innerText = getAvatar(p.nome);
+                avatarEl.classList.add('text-2xl', 'font-black', 'uppercase');
+            }
+
+            const html = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Identificação -->
+                    <div class="space-y-3">
+                        <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1">Identificação</h5>
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200">
+                            <p class="text-xs text-slate-400 mb-0.5">Nascimento</p>
+                            <p class="font-bold text-slate-800">${p.nascimento.split('-').reverse().join('/')}</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200">
+                            <p class="text-xs text-slate-400 mb-0.5">Status</p>
+                            <p class="font-bold ${p.status === 'Ativo' ? 'text-emerald-600' : 'text-rose-500'}">${p.status}</p>
+                        </div>
+                    </div>
+                    <!-- Uniforme -->
+                    <div class="space-y-3">
+                        <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1">Uniforme & Kit</h5>
+                        <div class="bg-amber-50 p-4 rounded-2xl border border-amber-100 grid grid-cols-2 gap-2">
+                            <div><p class="text-[10px] text-amber-600 font-bold">CAMISA</p><p class="font-black text-amber-900">${p.uniforme.camisa}</p></div>
+                            <div><p class="text-[10px] text-amber-600 font-bold">CHUTEIRA</p><p class="font-black text-amber-900">${p.uniforme.calcado}</p></div>
+                            <div><p class="text-[10px] text-amber-600 font-bold">CALÇÃO</p><p class="font-black text-amber-900">${p.uniforme.calcao}</p></div>
+                            <div><p class="text-[10px] text-amber-600 font-bold">MEIÃO</p><p class="font-black text-amber-900">${p.uniforme.meiao}</p></div>
+                        </div>
+                    </div>
+                    <!-- Escola -->
+                    <div class="space-y-3">
+                        <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1">Escola</h5>
+                        <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100">
+                            <p class="font-bold text-slate-800">${p.escola ? p.escola.nome || '-' : '-'}</p>
+                            <p class="text-xs text-indigo-600 font-bold mt-1">${p.escola ? `${p.escola.serie || ''} • Turno: ${p.escola.turno || ''}` : '-'}</p>
+                        </div>
+                    </div>
+                    <!-- Endereço -->
+                    <div class="space-y-3">
+                        <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1">Endereço</h5>
+                        <div class="bg-orange-50 p-4 rounded-2xl border border-orange-100">
+                            <p class="font-bold text-slate-800 text-sm">${p.endereco ? `${p.endereco.rua || ''}, ${p.endereco.numero || ''}` : '-'}</p>
+                            <p class="text-xs text-orange-600 font-bold mt-1">${p.endereco ? `${p.endereco.bairro || ''} - ${p.endereco.cidade || ''}` : ''}</p>
+                            <p class="text-xs text-slate-400 font-bold mt-0.5">CEP: ${p.endereco ? p.endereco.cep || '-' : '-'}</p>
+                        </div>
+                    </div>
+                    <!-- Responsáveis -->
+                    <div class="sm:col-span-2 space-y-3">
+                        <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1">Responsáveis</h5>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="bg-white p-4 rounded-2xl border border-slate-200">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase">Mãe</p>
+                                <p class="font-bold text-slate-800">${p.contato.mae || 'N/A'}</p>
+                                <p class="text-emerald-600 font-bold text-sm mt-1">${p.contato.foneMae || '-'}</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-2xl border border-slate-200">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase">Pai</p>
+                                <p class="font-bold text-slate-800">${p.contato.pai || 'N/A'}</p>
+                                <p class="text-emerald-600 font-bold text-sm mt-1">${p.contato.fonePai || '-'}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Saúde Completa -->
+                    <div class="sm:col-span-2 space-y-3">
+                        <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1">Saúde & Bem-Estar</h5>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div class="bg-rose-50 p-3 rounded-xl border border-rose-100 text-center">
+                                <p class="text-[10px] text-rose-500 font-black uppercase">Tipo Sang.</p>
+                                <p class="font-black text-rose-700 text-lg">${p.saude.sangue}</p>
+                            </div>
+                            <div class="bg-white p-3 rounded-xl border border-slate-200">
+                                <p class="text-[10px] text-slate-400 font-black uppercase">Plano Saúde</p>
+                                <p class="font-bold text-slate-700 text-sm">${p.saude.plano || 'Nenhum'}</p>
+                            </div>
+                            <div class="bg-white p-3 rounded-xl border ${p.saude.alergias !== 'Nenhuma' ? 'border-rose-200 bg-rose-50' : 'border-slate-200'}">
+                                <p class="text-[10px] text-slate-400 font-black uppercase">Alergias</p>
+                                <p class="font-bold text-sm ${p.saude.alergias !== 'Nenhuma' ? 'text-rose-600' : 'text-emerald-600'}">${p.saude.alergias || 'Nenhuma'}</p>
+                            </div>
+                            <div class="bg-white p-3 rounded-xl border border-slate-200">
+                                <p class="text-[10px] text-slate-400 font-black uppercase">Medicamentos</p>
+                                <p class="font-bold text-slate-700 text-sm">${p.saude.medicamentos || 'Nenhum'}</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border ${p.saude.cirurgias && p.saude.cirurgias !== 'Nenhuma' ? 'border-purple-200 bg-purple-50' : 'border-slate-200'}">
+                            <p class="text-[10px] font-black uppercase ${p.saude.cirurgias && p.saude.cirurgias !== 'Nenhuma' ? 'text-purple-500' : 'text-slate-400'} mb-1">Histórico de Cirurgias</p>
+                            <p class="text-sm font-bold ${p.saude.cirurgias && p.saude.cirurgias !== 'Nenhuma' ? 'text-purple-700' : 'text-emerald-600'}">${p.saude.cirurgias || 'Nenhuma'}</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border ${p.saude.lesoes && p.saude.lesoes !== 'Nenhuma' ? 'border-amber-200 bg-amber-50' : 'border-slate-200'}">
+                            <p class="text-[10px] font-black uppercase ${p.saude.lesoes && p.saude.lesoes !== 'Nenhuma' ? 'text-amber-500' : 'text-slate-400'} mb-1">Lesões / Condições Gerais</p>
+                            <p class="text-sm font-bold ${p.saude.lesoes && p.saude.lesoes !== 'Nenhuma' ? 'text-amber-700' : 'text-emerald-600'}">${p.saude.lesoes || 'Nenhuma'}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modal-content').innerHTML = html;
+            document.getElementById('player-modal').classList.remove('hidden');
+            document.getElementById('player-modal').classList.add('flex');
+            safeCreateIcons();
+        }
+
+        function closeModal() {
+            document.getElementById('player-modal').classList.add('hidden');
+            document.getElementById('player-modal').classList.remove('flex');
+        }
+
+        function exportCSV() {
+            const filter = document.getElementById('relatorio-cat-filter').value;
+            const filtered = players.filter(p => filter === 'Todas' || calcCat(p.nascimento) === filter);
+            const header = 'Nome,Categoria,Nascimento,Escola,Serie,Turno,CEP,Endereço,Sangue,Alergias,Cirurgias,Fone Mãe,Fone Pai';
+            const rows = filtered.map(p => [
+                p.nome, calcCat(p.nascimento), p.nascimento.split('-').reverse().join('/'),
+                p.escola?.nome||'', p.escola?.serie||'', p.escola?.turno||'',
+                p.endereco?.cep||'', `${p.endereco?.rua||''} ${p.endereco?.numero||''}`.trim(),
+                p.saude.sangue, p.saude.alergias, p.saude.cirurgias||'Nenhuma',
+                p.contato.foneMae, p.contato.fonePai
+            ].map(v => `"${v}"`).join(','));
+            const csv = [header, ...rows].join('\n');
+            const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'atletas.csv'; a.click();
+        }
+
+        function safeCreateIcons() {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        const updateVH = () => {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+            document.body.style.height = '100vh';
+            document.body.style.height = `calc(${vh}px * 100)`;
+        };
+        window.onload = () => {
+            updateVH();
+            window.addEventListener('resize', updateVH);
+            if (TEST_MODE) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                navigate('dashboard');
+                const tb = document.getElementById('test-badge');
+                if (tb) tb.classList.remove('hidden');
+            }
+        };
+    </script>
+</body>
+</html>
