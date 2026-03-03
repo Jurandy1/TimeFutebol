@@ -75,6 +75,9 @@
         // Monitorar estado da autenticação
         if(auth) {
             onAuthStateChanged(auth, (user) => {
+                const loader = document.getElementById('loading-screen');
+                if (loader) loader.classList.add('hidden'); // Oculta o loading
+
                 if (user) {
                     console.log("Usuário logado:", user.email);
                     document.getElementById('login-screen').classList.add('hidden');
@@ -136,6 +139,12 @@
     </style>
 </head>
 <body class="bg-[#f8fafc] text-slate-900 overflow-hidden">
+
+    <!-- TELA DE LOADING (nova) -->
+    <div id="loading-screen" class="fixed inset-0 bg-[#f8fafc] flex flex-col items-center justify-center z-[200]">
+        <div class="w-12 h-12 border-4 border-red-700 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="text-slate-500 text-sm font-medium">Carregando...</p>
+    </div>
 
     <!-- TELA PÚBLICA DE INSCRIÇÃO (SEM LOGIN) -->
     <div id="public-inscricao" class="hidden min-h-screen bg-slate-50 flex flex-col items-center p-4">
@@ -1137,7 +1146,7 @@
             const ativos = players.filter(p => p.status === 'Ativo').length;
             const cats = ['SUB 9', 'SUB 11', 'SUB 13', 'SUB 15', 'SUB 17'];
             const afastados = total - ativos;
-            const comCirurgia = players.filter(p => p.saude.cirurgias && p.saude.cirurgias !== 'Nenhuma').length;
+            const comCirurgia = players.filter(p => p.saude?.cirurgias && p.saude.cirurgias !== 'Nenhuma').length;
 
             let html = `
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1182,14 +1191,14 @@
                 <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
                     <h3 class="font-black text-slate-800 text-lg mb-6">Alertas de Saúde</h3>
                     <div class="space-y-3">
-                        ${players.filter(p => p.saude.alergias !== 'Nenhuma' || (p.saude.cirurgias && p.saude.cirurgias !== 'Nenhuma') || (p.saude.lesoes && p.saude.lesoes !== 'Nenhuma')).map(p => `
+                        ${players.filter(p => (p.saude?.alergias && p.saude.alergias !== 'Nenhuma') || (p.saude?.cirurgias && p.saude.cirurgias !== 'Nenhuma') || (p.saude?.lesoes && p.saude.lesoes !== 'Nenhuma')).map(p => `
                             <div class="flex items-start gap-3 p-4 bg-rose-50 rounded-2xl border border-rose-100">
                                 <div class="w-8 h-8 rounded-xl bg-rose-500 flex items-center justify-center text-white font-black text-xs flex-shrink-0">${getAvatar(p.nome)}</div>
                                 <div>
                                     <p class="font-bold text-slate-800 text-sm">${p.nome} <span class="text-[10px] font-bold text-[#DA291C] bg-red-100 px-2 py-0.5 rounded-full ml-1">${calcCat(p.nascimento)}</span></p>
-                                    ${p.saude.alergias !== 'Nenhuma' ? `<p class="text-xs text-rose-600 mt-0.5">⚠ Alergia: ${p.saude.alergias}</p>` : ''}
-                                    ${p.saude.cirurgias && p.saude.cirurgias !== 'Nenhuma' ? `<p class="text-xs text-purple-600 mt-0.5">🏥 Cirurgia: ${p.saude.cirurgias}</p>` : ''}
-                                    ${p.saude.lesoes && p.saude.lesoes !== 'Nenhuma' ? `<p class="text-xs text-amber-600 mt-0.5">🩹 Lesão/Condição: ${p.saude.lesoes}</p>` : ''}
+                                    ${p.saude?.alergias !== 'Nenhuma' ? `<p class="text-xs text-rose-600 mt-0.5">⚠ Alergia: ${p.saude?.alergias || ''}</p>` : ''}
+                                    ${p.saude?.cirurgias && p.saude.cirurgias !== 'Nenhuma' ? `<p class="text-xs text-purple-600 mt-0.5">🏥 Cirurgia: ${p.saude.cirurgias}</p>` : ''}
+                                    ${p.saude?.lesoes && p.saude.lesoes !== 'Nenhuma' ? `<p class="text-xs text-amber-600 mt-0.5">🩹 Lesão/Condição: ${p.saude.lesoes}</p>` : ''}
                                 </div>
                             </div>
                         `).join('') || '<p class="text-slate-400 text-sm text-center py-4">Nenhum alerta de saúde no momento.</p>'}
@@ -1225,7 +1234,7 @@
                         <h4 class="font-extrabold text-slate-900 text-lg leading-tight text-center truncate w-full mb-1">${p.nome}</h4>
                         <p class="text-xs text-slate-400 font-bold mb-1">${new Date(p.nascimento).getFullYear()}</p>
                         <p class="text-xs text-[#DA291C] font-bold mb-4">${p.posicao || ''} ${p.numeroCamisa ? '• Nº '+p.numeroCamisa : ''}</p>
-                        ${p.saude.alergias !== 'Nenhuma' ? `<span class="text-[10px] bg-red-50 text-red-500 border border-red-100 px-2 py-0.5 rounded-full font-bold mb-2">⚠ ${p.saude.alergias}</span>` : ''}
+                        ${p.saude?.alergias && p.saude.alergias !== 'Nenhuma' ? `<span class="text-[10px] bg-red-50 text-red-500 border border-red-100 px-2 py-0.5 rounded-full font-bold mb-2">⚠ ${p.saude.alergias}</span>` : ''}
                         <button onclick="openPlayer('${p.id}')" class="w-full py-2.5 bg-slate-900 hover:bg-[#DA291C] text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all mt-auto border-t border-slate-800">Ver Ficha Completa</button>
                     </div>
                 </div>
@@ -1259,22 +1268,22 @@
                     </td>
                     <td class="py-2 px-3 col-resp text-slate-500">
                         <div class="flex flex-col gap-1">
-                            <span class="text-[10px]"><strong class="text-slate-700">M:</strong> ${p.contato.mae || '-'}</span>
-                            <span class="text-[10px]"><strong class="text-slate-700">P:</strong> ${p.contato.pai || '-'}</span>
+                            <span class="text-[10px]"><strong class="text-slate-700">M:</strong> ${p.contato?.mae || '-'}</span>
+                            <span class="text-[10px]"><strong class="text-slate-700">P:</strong> ${p.contato?.pai || '-'}</span>
                         </div>
                     </td>
                     <td class="py-2 px-3 col-cont text-slate-600 font-medium whitespace-nowrap">
                         <div class="flex flex-col gap-1">
-                            <span>${p.contato.foneMae || '-'}</span>
-                            <span>${p.contato.fonePai || '-'}</span>
+                            <span>${p.contato?.foneMae || '-'}</span>
+                            <span>${p.contato?.fonePai || '-'}</span>
                         </div>
                     </td>
                     <td class="py-2 px-3 col-saude">
-                        ${p.saude.alergias !== 'Nenhuma' ? `<span class="text-rose-600 font-bold block text-[10px] whitespace-nowrap">⚠ ${p.saude.alergias}</span>` : ''}
-                        ${p.saude.cirurgias && p.saude.cirurgias !== 'Nenhuma' ? `<span class="text-purple-600 font-bold block text-[10px] whitespace-nowrap">🏥 Cirurgia</span>` : ''}
-                        ${p.saude.alergias === 'Nenhuma' && (!p.saude.cirurgias || p.saude.cirurgias === 'Nenhuma') ? '<span class="text-emerald-500 font-bold text-[10px]">✓ OK</span>' : ''}
+                        ${p.saude?.alergias && p.saude.alergias !== 'Nenhuma' ? `<span class="text-rose-600 font-bold block text-[10px] whitespace-nowrap">⚠ ${p.saude.alergias}</span>` : ''}
+                        ${p.saude?.cirurgias && p.saude.cirurgias !== 'Nenhuma' ? `<span class="text-purple-600 font-bold block text-[10px] whitespace-nowrap">🏥 Cirurgia</span>` : ''}
+                        ${(p.saude?.alergias === 'Nenhuma' || !p.saude?.alergias) && (!p.saude?.cirurgias || p.saude?.cirurgias === 'Nenhuma') ? '<span class="text-emerald-500 font-bold text-[10px]">✓ OK</span>' : ''}
                     </td>
-                    <td class="py-2 px-3 col-sangue font-bold text-rose-700" style="display:none">${p.saude.sangue || '-'}</td>
+                    <td class="py-2 px-3 col-sangue font-bold text-rose-700" style="display:none">${p.saude?.sangue || '-'}</td>
                     <td class="py-2 px-3 col-obs text-slate-500 text-[10px] italic max-w-[200px] truncate" style="display:none">${p.observacoes || '-'}</td>
                 </tr>
             `).join('');
