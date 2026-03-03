@@ -12,7 +12,7 @@ while ($listener.IsListening) {
     $response = $context.Response
     $path = $request.Url.AbsolutePath
     if ($path -eq "/" -or [string]::IsNullOrEmpty($path)) {
-        $path = "/Index.html"
+        $path = "/index.html"
     }
     $localPath = Join-Path $PWD ($path.TrimStart("/"))
     if (Test-Path $localPath -PathType Leaf) {

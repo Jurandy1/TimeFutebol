@@ -4,8 +4,86 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sistema de Time | Gestão de Academia</title>
+    
+    <!-- Tratamento de Erro Global -->
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            const errorBox = document.createElement('div');
+            errorBox.style.position = 'fixed';
+            errorBox.style.top = '0';
+            errorBox.style.left = '0';
+            errorBox.style.width = '100%';
+            errorBox.style.background = '#fee2e2';
+            errorBox.style.color = '#dc2626';
+            errorBox.style.padding = '10px';
+            errorBox.style.zIndex = '9999';
+            errorBox.style.fontFamily = 'monospace';
+            errorBox.style.fontSize = '12px';
+            errorBox.innerHTML = `<strong>Erro detectado:</strong> ${msg}<br><small>${url}:${line}:${col}</small>`;
+            document.body.appendChild(errorBox);
+            console.error('Erro global:', error);
+            return false;
+        };
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.js"></script>
+
+    <!-- FIREBASE SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // CONFIGURAÇÃO DO FIREBASE - SUBSTITUA COM SEUS DADOS
+        const firebaseConfig = {
+            apiKey: "AIzaSyDnLlLrzfemuxVna0L-2-bvGGzwuG4cdMs",
+            authDomain: "sistematimefutebol.firebaseapp.com",
+            projectId: "sistematimefutebol",
+            storageBucket: "sistematimefutebol.firebasestorage.app",
+            messagingSenderId: "526153456891",
+            appId: "1:526153456891:web:3bcbea9863db37225fa45e"
+        };
+
+        // Inicializa Firebase
+        let app, auth, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            window.firebaseAuth = auth; // Expor para uso global
+            window.firebaseDb = db;
+            window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+            window.signOut = signOut;
+            window.collection = collection;
+            window.addDoc = addDoc;
+            window.getDocs = getDocs;
+            window.query = query;
+            window.orderBy = orderBy;
+            window.limit = limit;
+            console.log("Firebase inicializado com sucesso");
+        } catch (e) {
+            console.error("Erro ao inicializar Firebase (verifique a config):", e);
+        }
+
+        // Monitorar estado da autenticação
+        if(auth) {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    console.log("Usuário logado:", user.email);
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('main-app').classList.remove('hidden');
+                    window.updateVH();
+                    window.navigate('dashboard');
+                    window.loadPlayersFromFirebase(); // Carregar dados reais
+                } else {
+                    console.log("Nenhum usuário logado");
+                    document.getElementById('login-screen').classList.remove('hidden');
+                    document.getElementById('main-app').classList.add('hidden');
+                }
+            });
+        }
+    </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -49,10 +127,10 @@
             </div>
             <form id="login-form" class="space-y-5">
                 <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1">Utilizador</label>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1">E-mail</label>
                     <div class="relative">
                         <i data-lucide="user" class="absolute left-4 top-3.5 w-5 h-5 text-slate-400"></i>
-                        <input type="text" id="login-user" required class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none text-slate-700" placeholder="admin">
+                        <input type="email" id="login-user" required class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none text-slate-700" placeholder="admin@gmail.com">
                     </div>
                 </div>
                 <div>
@@ -176,6 +254,7 @@
                                 <h3 class="font-bold text-slate-800 uppercase tracking-tight text-sm">Informação Pessoal & Foto</h3>
                             </div>
                             <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                <!-- FOTO REMOVIDA TEMPORARIAMENTE
                                 <div class="lg:col-span-3">
                                     <div id="photo-preview" class="aspect-square bg-slate-100 rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-200 transition-all overflow-hidden relative group">
                                         <i data-lucide="camera" class="w-8 h-8 text-slate-400 group-hover:scale-110 transition-transform"></i>
@@ -183,7 +262,8 @@
                                         <input type="file" id="foto-input" class="absolute inset-0 opacity-0 cursor-pointer" accept="image/*">
                                     </div>
                                 </div>
-                                <div class="lg:col-span-9 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                -->
+                                <div class="lg:col-span-12 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="sm:col-span-2">
                                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nome Completo do Atleta</label>
                                         <input required name="nome" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all" placeholder="Ex: Lucas Ferreira dos Santos">
@@ -391,7 +471,7 @@
                             </div>
                         </div>
 
-                        <!-- Anexar Documentos -->
+                        <!-- Anexar Documentos (REMOVIDO TEMPORARIAMENTE)
                         <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                             <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
                                 <div class="p-2 bg-slate-200 rounded-lg text-slate-600"><i data-lucide="paperclip" class="w-5 h-5"></i></div>
@@ -415,6 +495,7 @@
                                 </div>
                             </div>
                         </div>
+                        -->
 
                         <!-- Observações -->
                         <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
@@ -544,23 +625,24 @@
             return isNaN(dt2.getTime()) ? null : dt2;
         };
         
-        let players = [
-            { id: 1, nome: 'Enzo Gabriel Santos', foto: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSx1MZQh5_RlH8EVfzY-zH37wJhnnYYBLRE3A&s', nascimento: '2018-04-12', posicao: 'Goleiro', numeroCamisa: '1', uniforme: { camisa: 'P', calcao: 'P', meiao: 'Infantil', calcado: 32 }, contato: { mae: 'Maria Souza', foneMae: '(11) 98888-1111', pai: 'João Santos', fonePai: '(11) 98888-2222' }, saude: { sangue: 'O+', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Unimed', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. José Alves', serie: '2º Ano - Fund.', turno: 'Manhã' }, endereco: { cep: '01310-100', rua: 'Av. Paulista', numero: '1000', bairro: 'Bela Vista', cidade: 'São Paulo / SP' }, status: 'Ativo' },
-            { id: 2, nome: 'Miguel Oliveira', foto: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQDBkyZpwPl2b30FoEd_J_OtAmdFVx0Sd517A&s', nascimento: '2017-08-22', posicao: 'Meia', numeroCamisa: '10', uniforme: { camisa: 'P', calcao: 'P', meiao: 'Infantil', calcado: 34 }, contato: { mae: 'Carla Oliveira', foneMae: '(11) 97777-1111', pai: '', fonePai: '' }, saude: { sangue: 'A+', alergias: 'Amendoim', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Bradesco Saúde', medicamentos: 'Nenhum' }, escola: { nome: 'E.M. Santos Dumont', serie: '3º Ano - Fund.', turno: 'Tarde' }, endereco: { cep: '02020-020', rua: 'Rua das Flores', numero: '200', bairro: 'Santana', cidade: 'São Paulo / SP' }, status: 'Ativo' },
-            { id: 3, nome: 'Arthur Lima Silva', nascimento: '2016-03-15', posicao: 'Atacante', numeroCamisa: '9', uniforme: { camisa: 'M', calcao: 'M', meiao: 'Infantil', calcado: 35 }, contato: { mae: 'Aline Lima', foneMae: '(11) 96666-1111', pai: 'Ricardo Silva', fonePai: '(11) 96666-2222' }, saude: { sangue: 'B+', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: '', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. Rui Barbosa', serie: '4º Ano - Fund.', turno: 'Manhã' }, endereco: { cep: '03100-000', rua: 'Rua Vergueiro', numero: '500', bairro: 'Vila Mariana', cidade: 'São Paulo / SP' }, status: 'Ativo' },
-            { id: 4, nome: 'Heitor Garcia', nascimento: '2015-11-30', posicao: 'Zagueiro', numeroCamisa: '4', uniforme: { camisa: 'G', calcao: 'G', meiao: 'Infantil', calcado: 37 }, contato: { mae: 'Lúcia Garcia', foneMae: '(11) 95555-1111', pai: 'Marcos Garcia', fonePai: '' }, saude: { sangue: 'O-', alergias: 'Lactose', cirurgias: 'Artroscopia joelho direito - 2024', lesoes: 'Joelho direito em recuperação', plano: 'Sul América', medicamentos: 'Anti-inflamatório pós cirurgia' }, escola: { nome: 'E.E. Castro Alves', serie: '5º Ano - Fund.', turno: 'Manhã' }, endereco: { cep: '04000-000', rua: 'Rua da Consolação', numero: '300', bairro: 'Consolação', cidade: 'São Paulo / SP' }, status: 'Afastado' },
-            { id: 5, nome: 'Davi Lucca Ribeiro', nascimento: '2015-02-05', posicao: 'Volante', numeroCamisa: '5', uniforme: { camisa: 'M', calcao: 'M', meiao: 'Infantil', calcado: 36 }, contato: { mae: 'Fernanda Ribeiro', foneMae: '(11) 94444-1111', pai: 'André Ribeiro', fonePai: '(11) 94444-2222' }, saude: { sangue: 'AB+', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Amil', medicamentos: 'Nenhum' }, escola: { nome: 'E.M. João Pessoa', serie: '6º Ano - Fund.', turno: 'Tarde' }, endereco: { cep: '05000-000', rua: 'Av. Faria Lima', numero: '800', bairro: 'Pinheiros', cidade: 'São Paulo / SP' }, status: 'Ativo' },
-            { id: 6, nome: 'Gabriel Jesus Moreira', nascimento: '2014-07-12', posicao: 'Atacante', numeroCamisa: '11', uniforme: { camisa: 'P', calcao: 'P', meiao: 'Adulto', calcado: 38 }, contato: { mae: 'Patrícia Moreira', foneMae: '(11) 93333-1111', pai: '', fonePai: '' }, saude: { sangue: 'A-', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: '', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. Tiradentes', serie: '7º Ano - Fund.', turno: 'Manhã' }, endereco: { cep: '06000-000', rua: 'Rua Teodoro Sampaio', numero: '120', bairro: 'Pinheiros', cidade: 'São Paulo / SP' }, status: 'Ativo' },
-            { id: 7, nome: 'Bernardo Costa', nascimento: '2013-09-18', posicao: 'Lateral Direito', numeroCamisa: '2', uniforme: { camisa: 'M', calcao: 'M', meiao: 'Adulto', calcado: 39 }, contato: { mae: 'Letícia Costa', foneMae: '(11) 92222-1111', pai: 'Vitor Costa', fonePai: '(11) 92222-2222' }, saude: { sangue: 'O+', alergias: 'Gramíneas', cirurgias: 'Nenhuma', lesoes: 'Asma leve - usa bombinha', plano: 'Unimed', medicamentos: 'Salbutamol spray' }, escola: { nome: 'E.E. Dom Pedro I', serie: '8º Ano - Fund.', turno: 'Tarde' }, endereco: { cep: '07000-000', rua: 'Rua Haddock Lobo', numero: '450', bairro: 'Cerqueira César', cidade: 'São Paulo / SP' }, status: 'Ativo' },
-            { id: 8, nome: 'Samuel Pereira', nascimento: '2013-02-25', posicao: 'Volante', numeroCamisa: '6', uniforme: { camisa: 'M', calcao: 'M', meiao: 'Adulto', calcado: 40 }, contato: { mae: 'Tati Pereira', foneMae: '(11) 91111-1111', pai: '', fonePai: '' }, saude: { sangue: 'B-', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Bradesco Saúde', medicamentos: 'Nenhum' }, escola: { nome: 'E.M. Villa Lobos', serie: '9º Ano - Fund.', turno: 'Manhã' }, endereco: { cep: '08000-000', rua: 'Av. Ibirapuera', numero: '2000', bairro: 'Moema', cidade: 'São Paulo / SP' }, status: 'Ativo' },
-            { id: 9, nome: 'João Miguel Gomes', nascimento: '2012-12-01', posicao: 'Meia', numeroCamisa: '8', uniforme: { camisa: 'G', calcao: 'G', meiao: 'Adulto', calcado: 41 }, contato: { mae: 'Bia Gomes', foneMae: '(21) 99999-0000', pai: 'Carlos Gomes', fonePai: '' }, saude: { sangue: 'O+', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: '', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. Machado de Assis', serie: '1º Ano - Médio', turno: 'Manhã' }, endereco: { cep: '20000-000', rua: 'Rua da Quitanda', numero: '10', bairro: 'Centro', cidade: 'Rio de Janeiro / RJ' }, status: 'Ativo' },
-            { id: 10, nome: 'Pietro Alves', nascimento: '2011-04-14', posicao: 'Zagueiro', numeroCamisa: '3', uniforme: { camisa: 'G', calcao: 'G', meiao: 'Adulto', calcado: 41 }, contato: { mae: 'Aline Alves', foneMae: '(21) 98888-0000', pai: 'Fábio Alves', fonePai: '(21) 98888-1111' }, saude: { sangue: 'A+', alergias: 'Abelha', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Sul América', medicamentos: 'Carrega EpiPen (alergia grave)' }, escola: { nome: 'E.E. Gonçalves Dias', serie: '2º Ano - Médio', turno: 'Manhã' }, endereco: { cep: '21000-000', rua: 'Rua Voluntários da Pátria', numero: '150', bairro: 'Botafogo', cidade: 'Rio de Janeiro / RJ' }, status: 'Ativo' },
-            { id: 11, nome: 'Lorenzo Fernandes', nascimento: '2011-10-08', posicao: 'Lateral Esquerdo', numeroCamisa: '6', uniforme: { camisa: 'M', calcao: 'M', meiao: 'Adulto', calcado: 40 }, contato: { mae: 'Joana Fern.', foneMae: '(21) 97777-0000', pai: 'Luis Fern.', fonePai: '' }, saude: { sangue: 'O+', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Amil', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. Olavo Bilac', serie: '2º Ano - Médio', turno: 'Tarde' }, endereco: { cep: '22000-000', rua: 'Av. Atlântica', numero: '500', bairro: 'Copacabana', cidade: 'Rio de Janeiro / RJ' }, status: 'Ativo' },
-            { id: 12, nome: 'Lucas Neto', nascimento: '2010-06-20', posicao: 'Atacante', numeroCamisa: '7', uniforme: { camisa: 'GG', calcao: 'GG', meiao: 'Adulto', calcado: 42 }, contato: { mae: 'Mara Neto', foneMae: '(21) 96666-0000', pai: 'André Neto', fonePai: '(21) 96666-1111' }, saude: { sangue: 'AB-', alergias: 'Miopia', cirurgias: 'Nenhuma', lesoes: 'Usa óculos fora do campo', plano: 'Unimed', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. Santos Dumont', serie: '3º Ano - Médio', turno: 'Manhã' }, endereco: { cep: '23000-000', rua: 'Rua Marquês de São Vicente', numero: '300', bairro: 'Gávea', cidade: 'Rio de Janeiro / RJ' }, status: 'Ativo' },
-            { id: 13, nome: 'Matheus Barbosa', nascimento: '2009-08-05', posicao: 'Ponta Direita', numeroCamisa: '7', uniforme: { camisa: 'G', calcao: 'G', meiao: 'Adulto', calcado: 43 }, contato: { mae: 'Eva Barbosa', foneMae: '(21) 95555-0000', pai: 'Igor Barbosa', fonePai: '' }, saude: { sangue: 'O+', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: '', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. Pedro Álvares Cabral', serie: '3º Ano - Médio', turno: 'Tarde' }, endereco: { cep: '24000-000', rua: 'Rua das Palmeiras', numero: '88', bairro: 'Niterói Centro', cidade: 'Niterói / RJ' }, status: 'Ativo' },
-            { id: 14, nome: 'Nicolas Schmidt', nascimento: '2009-11-11', posicao: 'Volante', numeroCamisa: '5', uniforme: { camisa: 'M', calcao: 'M', meiao: 'Adulto', calcado: 41 }, contato: { mae: 'Katia Schmidt', foneMae: '(21) 94444-0000', pai: 'Rolf Schmidt', fonePai: '(21) 94444-1111' }, saude: { sangue: 'A+', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Bradesco Saúde', medicamentos: 'Nenhum' }, escola: { nome: 'E.M. Duque de Caxias', serie: '3º Ano - Médio', turno: 'Manhã' }, endereco: { cep: '25000-000', rua: 'Av. Getúlio Vargas', numero: '400', bairro: 'Centro', cidade: 'Duque de Caxias / RJ' }, status: 'Ativo' },
-            { id: 15, nome: 'Rafael Vaz', nascimento: '2009-01-30', posicao: 'Goleiro', numeroCamisa: '12', uniforme: { camisa: 'GG', calcao: 'GG', meiao: 'Adulto', calcado: 44 }, contato: { mae: 'Clara Vaz', foneMae: '(21) 93333-0000', pai: 'Jorge Vaz', fonePai: '(21) 93333-1111' }, saude: { sangue: 'O-', alergias: 'Nenhuma', cirurgias: 'Nenhuma', lesoes: 'Nenhuma', plano: 'Amil', medicamentos: 'Nenhum' }, escola: { nome: 'E.E. Tiradentes', serie: '3º Ano - Médio', turno: 'Tarde' }, endereco: { cep: '26000-000', rua: 'Rua XV de Novembro', numero: '55', bairro: 'Centro', cidade: 'Nova Iguaçu / RJ' }, status: 'Ativo' }
-        ];
+        let players = []; // Iniciado vazio, carregado do Firebase
+
+        async function loadPlayersFromFirebase() {
+            if (!window.firebaseDb) return;
+            try {
+                const q = window.query(window.collection(window.firebaseDb, "atletas"), window.orderBy("nome"));
+                const querySnapshot = await window.getDocs(q);
+                players = [];
+                querySnapshot.forEach((doc) => {
+                    players.push({ id: doc.id, ...doc.data() });
+                });
+                console.log("Atletas carregados:", players.length);
+                renderDashboard();
+                renderAtletas();
+            } catch (e) {
+                console.error("Erro ao carregar atletas:", e);
+            }
+        }
 
         const calcCat = (nasc) => {
             if (!nasc) return '-';
@@ -588,18 +670,46 @@
             e.preventDefault();
             const u = document.getElementById('login-user').value;
             const p = document.getElementById('login-pass').value;
-            if(u === 'admin' && p === '123456') {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('main-app').classList.remove('hidden');
-                updateVH(); // Força recalculado de altura no mobile
-                navigate('dashboard');
+
+            // Tentativa de login via Firebase
+            if (window.firebaseAuth) {
+                document.getElementById('login-error').classList.add('hidden');
+                window.signInWithEmailAndPassword(window.firebaseAuth, u, p)
+                .then((userCredential) => {
+                    // Login sucesso (tratado pelo onAuthStateChanged)
+                })
+                .catch((error) => {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    document.getElementById('login-error').classList.remove('hidden');
+                    document.getElementById('login-error-msg').innerText = "Erro: " + errorMessage;
+                    if(errorCode === 'auth/invalid-credential') document.getElementById('login-error-msg').innerText = "E-mail ou senha inválidos.";
+                });
             } else {
-                document.getElementById('login-error').classList.remove('hidden');
-                document.getElementById('login-error-msg').innerText = "Credenciais incorretas!";
+                // Fallback para teste local se Firebase não estiver configurado
+                if(u === 'admin' && p === '123456') {
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('main-app').classList.remove('hidden');
+                    updateVH(); 
+                    navigate('dashboard');
+                } else {
+                    document.getElementById('login-error').classList.remove('hidden');
+                    document.getElementById('login-error-msg').innerText = "Credenciais incorretas!";
+                }
             }
         };
 
-        function logout() { window.location.reload(); }
+        function logout() { 
+            if(window.firebaseAuth) {
+                window.signOut(window.firebaseAuth).then(() => {
+                    window.location.reload();
+                }).catch((error) => {
+                    console.error("Erro ao sair", error);
+                });
+            } else {
+                window.location.reload(); 
+            }
+        }
 
         function navigate(view) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
@@ -827,11 +937,17 @@
             document.getElementById('cat-display').innerText = calcCat(e.target.value);
         };
 
-        document.getElementById('cadastro-form').onsubmit = (e) => {
+        document.getElementById('cadastro-form').onsubmit = async (e) => {
             e.preventDefault();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i data-lucide="loader" class="w-6 h-6 animate-spin"></i> Salvando...';
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+
             const f = new FormData(e.target);
             const p = {
-                id: Date.now(),
+                // id: Date.now(), // Gerado pelo Firebase
                 nome: f.get('nome'),
                 nascimento: f.get('dataNascimento'),
                 posicao: f.get('posicao'),
@@ -842,13 +958,36 @@
                 saude: { sangue: f.get('tipoSanguineo'), alergias: f.get('alergias') || 'Nenhuma', cirurgias: f.get('cirurgias') || 'Nenhuma', lesoes: f.get('lesoes') || 'Nenhuma', plano: f.get('planoSaude') || '', medicamentos: f.get('medicamentos') || 'Nenhum' },
                 escola: { nome: f.get('nomeEscola'), serie: f.get('serie'), turno: f.get('turno') },
                 endereco: { cep: f.get('cep'), rua: f.get('rua'), numero: f.get('endNumero'), bairro: f.get('bairro'), cidade: f.get('cidade') },
-                observacoes: f.get('observacoes')
+                observacoes: f.get('observacoes'),
+                createdAt: new Date().toISOString()
             };
-            players.push(p);
-            alert("Atleta cadastrado com sucesso!");
-            e.target.reset();
-            document.getElementById('cat-display').innerText = '-';
-            navigate('atletas');
+
+            if (window.firebaseDb) {
+                try {
+                    const docRef = await window.addDoc(window.collection(window.firebaseDb, "atletas"), p);
+                    console.log("Documento gravado com ID: ", docRef.id);
+                    p.id = docRef.id;
+                    players.push(p);
+                    alert("Atleta cadastrado com sucesso!");
+                    e.target.reset();
+                    document.getElementById('cat-display').innerText = '-';
+                    navigate('atletas');
+                } catch (e) {
+                    console.error("Erro ao adicionar documento: ", e);
+                    alert("Erro ao salvar no banco de dados: " + e.message);
+                }
+            } else {
+                // Fallback local
+                p.id = Date.now();
+                players.push(p);
+                alert("Atleta cadastrado (Modo Local)!");
+                e.target.reset();
+                navigate('atletas');
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            if(typeof lucide !== 'undefined') lucide.createIcons();
         };
 
         document.getElementById('atleta-search').oninput = renderAtletas;
