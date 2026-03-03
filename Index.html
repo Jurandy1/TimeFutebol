@@ -140,7 +140,7 @@
         }
     </style>
 </head>
-<body class="bg-[#f8fafc] text-slate-900 overflow-hidden">
+<body class="bg-[#f8fafc] text-slate-900 overflow-y-auto overflow-x-hidden">
 
     <!-- TELA DE LOADING (nova) -->
     <div id="loading-screen" class="fixed inset-0 bg-[#f8fafc] flex flex-col items-center justify-center z-[200]">
@@ -187,7 +187,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Data de Nascimento</label>
-                                <input required name="dataNascimento" type="date" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                                <input required id="public-nasc" name="dataNascimento" type="text" maxlength="10" placeholder="DD/MM/AAAA" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Posição Preferida</label>
@@ -205,23 +205,23 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">CEP</label>
-                                <input required name="cep" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                                <input required name="cep" id="public-cep" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" placeholder="00000-000">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cidade</label>
-                                <input required name="cidade" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cidade / Estado</label>
+                                <input required name="cidade" id="public-cidade" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Rua / Logradouro</label>
-                                <input required name="rua" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                                <input required name="rua" id="public-rua" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Número</label>
-                                <input required name="endNumero" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                                <input required name="endNumero" id="public-numero" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Bairro</label>
-                                <input required name="bairro" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
+                                <input required name="bairro" id="public-bairro" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none">
                             </div>
                         </div>
                     </div>
@@ -236,7 +236,12 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Série</label>
-                                <input name="serie" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" placeholder="Ex: 5º Ano">
+                                <select name="serie" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none bg-white">
+                                    <option value="">Selecione...</option>
+                                    <option>1º Ano Fund.</option><option>2º Ano Fund.</option><option>3º Ano Fund.</option><option>4º Ano Fund.</option><option>5º Ano Fund.</option>
+                                    <option>6º Ano Fund.</option><option>7º Ano Fund.</option><option>8º Ano Fund.</option><option>9º Ano Fund.</option>
+                                    <option>1º Ano Médio</option><option>2º Ano Médio</option><option>3º Ano Médio</option>
+                                </select>
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Turno</label>
@@ -534,7 +539,7 @@
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Data de Nascimento</label>
-                                        <input required id="nasc-input" name="dataNascimento" type="date" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-red-500/10 focus:border-red-500 outline-none transition-all">
+                                        <input required id="nasc-input" name="dataNascimento" type="text" maxlength="10" placeholder="DD/MM/AAAA" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-red-500/10 focus:border-red-500 outline-none transition-all">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Categoria Prevista</label>
@@ -573,7 +578,9 @@
                                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Série / Ano</label>
                                     <select name="serie" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none text-sm">
                                         <option value="">Selecione...</option>
-                                        <option>1º Ano - Fund.</option><option>2º Ano - Fund.</option><option>3º Ano - Fund.</option><option>4º Ano - Fund.</option><option>5º Ano - Fund.</option><option>6º Ano - Fund.</option><option>7º Ano - Fund.</option><option>8º Ano - Fund.</option><option>9º Ano - Fund.</option><option>1º Ano - Médio</option><option>2º Ano - Médio</option><option>3º Ano - Médio</option>
+                                        <option>1º Ano Fund.</option><option>2º Ano Fund.</option><option>3º Ano Fund.</option><option>4º Ano Fund.</option><option>5º Ano Fund.</option>
+                                        <option>6º Ano Fund.</option><option>7º Ano Fund.</option><option>8º Ano Fund.</option><option>9º Ano Fund.</option>
+                                        <option>1º Ano Médio</option><option>2º Ano Médio</option><option>3º Ano Médio</option>
                                     </select>
                                 </div>
                                 <div>
@@ -1350,7 +1357,7 @@
             alert(`Presença do treino do dia ${data.split('-').reverse().join('/')} salva com sucesso!`);
         }
 
-        // CEP auto-fill (simulado)
+        // CEP auto-fill (interno)
         document.getElementById('cep-input') && document.getElementById('cep-input').addEventListener('blur', function() {
             const cep = this.value.replace(/\D/g,'');
             if (cep.length === 8) {
@@ -1359,6 +1366,20 @@
                         document.getElementById('rua-input').value = d.logradouro || '';
                         document.getElementById('bairro-input').value = d.bairro || '';
                         document.getElementById('cidade-input').value = `${d.localidade} / ${d.uf}`;
+                    }
+                }).catch(()=>{});
+            }
+        });
+
+        // CEP auto-fill (público)
+        document.getElementById('public-cep') && document.getElementById('public-cep').addEventListener('blur', function() {
+            const cep = this.value.replace(/\D/g,'');
+            if (cep.length === 8) {
+                fetch(`https://viacep.com.br/ws/${cep}/json/`).then(r=>r.json()).then(d=>{
+                    if (!d.erro) {
+                        document.getElementById('public-rua').value = d.logradouro || '';
+                        document.getElementById('public-bairro').value = d.bairro || '';
+                        document.getElementById('public-cidade').value = `${d.localidade} / ${d.uf}`;
                     }
                 }).catch(()=>{});
             }
@@ -1552,7 +1573,15 @@
             setVal('nome', p.nome);
             setVal('cpf', p.cpf);
             setVal('rg', p.rg);
-            setVal('dataNascimento', p.nascimento);
+            
+            // Converte YYYY-MM-DD para DD/MM/AAAA para exibir no input
+            let showNasc = p.nascimento;
+            if (p.nascimento && p.nascimento.includes('-')) {
+                const parts = p.nascimento.split('-');
+                showNasc = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+            setVal('dataNascimento', showNasc);
+
             document.getElementById('cat-display').innerText = calcCat(p.nascimento);
             setVal('posicao', p.posicao);
             setVal('numeroCamisa', p.numeroCamisa);
