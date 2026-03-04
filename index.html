@@ -480,10 +480,10 @@
     <div id="main-app" class="hidden min-h-screen w-full flex flex-col md:flex-row bg-[#f8fafc] relative">
         
         <!-- SIDEBAR DESKTOP -->
-        <aside id="sidebar" class="w-72 bg-slate-900 text-slate-300 flex-shrink-0 z-50 transition-all duration-300
-            fixed inset-y-0 left-0 transform -translate-x-full md:translate-x-0 md:sticky md:top-0 md:h-screen overflow-y-auto no-print">
+        <aside id="sidebar" class="w-72 bg-slate-900 text-slate-300 flex-shrink-0 z-[60] transition-all duration-300
+            fixed inset-y-0 left-0 transform -translate-x-full md:translate-x-0 md:sticky md:top-0 md:h-screen overflow-y-auto no-print shadow-2xl">
             <!-- Overlay para fechar no mobile -->
-            <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden" onclick="closeSidebar()"></div>
+            <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-[-1] hidden md:hidden backdrop-blur-sm" onclick="closeSidebar()"></div>
             <div class="p-8 flex flex-col items-center gap-6 border-b border-slate-800/50 relative overflow-hidden group">
                 <div class="absolute inset-0 bg-[#DA291C]/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                 <div class="w-full max-w-[180px] aspect-square relative z-10 transition-transform duration-500 group-hover:scale-105">
