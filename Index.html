@@ -37,7 +37,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // CONFIGURAÇÃO DO FIREBASE - SUBSTITUA COM SEUS DADOS
         const firebaseConfig = {
@@ -431,42 +431,42 @@
     </div>
 
     <!-- TELA DE LOGIN -->
-    <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 px-4 overflow-hidden">
+    <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 px-4">
         <div class="absolute inset-0 z-0">
             <img src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1920&q=80" class="w-full h-full object-cover opacity-20" alt="Estádio">
             <div class="absolute inset-0 bg-gradient-to-t from-[#DA291C]/90 via-slate-900/80 to-transparent"></div>
         </div>
-        <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 sm:p-10 relative z-10 border border-slate-100 flex flex-col items-center">
-            <div class="w-full aspect-square max-w-[250px] bg-transparent flex items-center justify-center mb-6 relative">
+        <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 sm:p-10 relative z-10 border border-slate-100 flex flex-col items-center">
+            <div class="w-full aspect-square max-w-[150px] sm:max-w-[250px] bg-transparent flex items-center justify-center mb-4 sm:mb-6 relative">
                 <div class="absolute inset-0 bg-[#DA291C]/5 rounded-full blur-3xl transform scale-150"></div>
                 <img src="logo.png" class="w-full h-full object-contain drop-shadow-2xl relative z-10 transform hover:scale-105 transition-transform duration-500" loading="lazy" onerror="this.src='https://placehold.co/200x200?text=Logo'">
             </div>
             
-            <p class="text-slate-500 text-sm font-bold uppercase tracking-[0.2em] mb-8 text-center border-b-2 border-[#DA291C] pb-2">Gestão de Academia</p>
-            <div id="login-error" class="hidden bg-rose-50 text-rose-600 p-4 rounded-xl mb-6 text-sm flex items-center gap-3 border border-rose-100">
+            <p class="text-slate-500 text-[10px] sm:text-sm font-bold uppercase tracking-[0.2em] mb-4 sm:mb-8 text-center border-b-2 border-[#DA291C] pb-2">Gestão de Academia</p>
+            <div id="login-error" class="hidden w-full bg-rose-50 text-rose-600 p-4 rounded-xl mb-6 text-sm flex items-center gap-3 border border-rose-100">
                 <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
                 <span id="login-error-msg"></span>
             </div>
-            <form id="login-form" class="space-y-5">
+            <form id="login-form" class="w-full space-y-4 sm:space-y-5">
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1">E-mail</label>
                     <div class="relative">
                         <i data-lucide="user" class="absolute left-4 top-3.5 w-5 h-5 text-slate-400"></i>
-                        <input type="email" id="login-user" required class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none text-slate-700" placeholder="admin@gmail.com">
+                        <input type="email" id="login-user" required class="w-full pl-12 pr-4 py-3 sm:py-3.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none text-slate-700" placeholder="admin@gmail.com">
                     </div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1">Senha</label>
                     <div class="relative">
                         <i data-lucide="lock" class="absolute left-4 top-3.5 w-5 h-5 text-slate-400"></i>
-                        <input type="password" id="login-pass" required class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none text-slate-700" placeholder="••••••">
+                        <input type="password" id="login-pass" required class="w-full pl-12 pr-4 py-3 sm:py-3.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none text-slate-700" placeholder="••••••">
                     </div>
                 </div>
-                <button type="submit" class="w-full bg-[#DA291C] hover:bg-red-800 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-red-900/30 transform active:scale-[0.98] mt-4 flex items-center justify-center gap-2">
+                <button type="submit" class="w-full bg-[#DA291C] hover:bg-red-800 text-white font-bold py-3.5 sm:py-4 rounded-xl transition-all shadow-lg shadow-red-900/30 transform active:scale-[0.98] mt-2 flex items-center justify-center gap-2">
                     Aceder ao Painel <i data-lucide="arrow-right" class="w-5 h-5"></i>
                 </button>
             </form>
-            <p class="text-center text-[10px] text-slate-400 mt-8 tracking-widest uppercase">Admin: admin@gmail.com | Senha: (Sua senha)</p>
+            <p class="text-center text-[10px] text-slate-400 mt-6 sm:mt-8 tracking-widest uppercase">Admin: admin@gmail.com | Senha: (Sua senha)</p>
         </div>
     </div>
 
