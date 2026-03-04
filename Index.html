@@ -92,9 +92,13 @@
                         document.getElementById('login-screen').classList.add('hidden');
                         document.getElementById('main-app').classList.add('hidden');
                         document.getElementById('public-inscricao').classList.remove('hidden');
+                        document.getElementById('public-inscricao').style.display = 'flex';
                     } else {
-                        navigate('dashboard');
-                        window.loadPlayersFromFirebase(); 
+                        // Bug 1: Delay de 50ms para garantir carregamento de funções
+                        setTimeout(() => {
+                            navigate('dashboard');
+                            window.loadPlayersFromFirebase(); 
+                        }, 50);
                     }
                 } else {
                     console.log("Nenhum usuário logado");
@@ -148,43 +152,87 @@
     <div id="loading-screen" class="fixed inset-0 bg-[#f8fafc] flex flex-col items-center justify-center z-[200]">
         <div class="w-12 h-12 border-4 border-red-700 border-t-transparent rounded-full animate-spin mb-4"></div>
         <p class="text-slate-500 text-sm font-medium">Carregando...</p>
-        <button onclick="document.getElementById('loading-screen').classList.add('hidden')" class="mt-8 px-4 py-2 text-xs text-red-500 underline">
+        <button id="btn-manual-entry" class="mt-8 px-4 py-2 text-xs text-red-500 underline">
             Demorando muito? Toque aqui para entrar
         </button>
     </div>
     
-    <!-- FALLBACK DE SEGURANÇA: Se o Firebase demorar muito, libera a tela -->
     <script>
+        // Função auxiliar para forçar visibilidade (Bug 3)
+        function forceShow(id) {
+            const el = document.getElementById(id);
+            if(el) {
+                el.classList.remove('hidden');
+                el.style.display = 'block'; // ou flex, dependendo do elemento, mas block resolve a maioria
+                if(id === 'main-app') el.style.display = 'flex'; // main-app usa flex
+                if(id === 'public-inscricao') el.style.display = 'flex'; // public-inscricao usa flex
+            }
+        }
+        function forceHide(id) {
+            const el = document.getElementById(id);
+            if(el) {
+                el.classList.add('hidden');
+                el.style.display = 'none';
+            }
+        }
+
+        // Bug 2: Botão manual agora garante exibição
+        document.getElementById('btn-manual-entry').onclick = () => {
+            forceHide('loading-screen');
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('page') === 'inscricao') {
+                forceShow('public-inscricao');
+                forceHide('login-screen');
+            } else {
+                // Se já tem app visível, ok. Se não, mostra login.
+                if (document.getElementById('main-app').classList.contains('hidden')) {
+                    forceShow('login-screen');
+                }
+            }
+        };
+
+        // Fallback 1 (3s)
         setTimeout(() => {
             const l = document.getElementById('loading-screen');
             if (l && !l.classList.contains('hidden')) {
-                console.warn('Loading timeout - Forçando exibição');
-                l.classList.add('hidden');
-                
-                // Se estiver na página pública, mostra ela, senão mostra login
-                const params = new URLSearchParams(window.location.search);
-                if (params.get('page') === 'inscricao') {
-                    document.getElementById('public-inscricao').classList.remove('hidden');
-                    document.getElementById('login-screen').classList.add('hidden');
-                } else {
-                    if (document.getElementById('main-app').classList.contains('hidden')) {
-                       document.getElementById('login-screen').classList.remove('hidden');
-                    }
+                console.warn('Loading timeout (3s) - Tentando liberar');
+                // Não esconde direto, deixa o usuário ou o 2º fallback agir, ou se o firebase responder logo
+                // Mas se quiser forçar:
+                // forceHide('loading-screen'); 
+                // forceShow('login-screen'); 
+                // (Mantendo comportamento original de apenas liberar se travado)
+                document.getElementById('btn-manual-entry').click(); // Simula clique para resolver
+            }
+        }, 3000);
+
+        // Bug 5: Segundo fallback incondicional (8s)
+        setTimeout(() => {
+            const l = document.getElementById('loading-screen');
+            if (l && l.style.display !== 'none') {
+                console.error('Critical timeout (8s) - Forçando entrada total');
+                forceHide('loading-screen');
+                if (document.getElementById('main-app').classList.contains('hidden')) {
+                    forceShow('login-screen');
                 }
             }
-        }, 3000); // 3 segundos (Reduzido para mobile)
+        }, 8000);
     </script>
     
     <script>
-        // Correção de loop de redirecionamento e flash no login
+        // Bug 4: window.load com delay e verificação
         window.addEventListener('load', () => {
-             const params = new URLSearchParams(window.location.search);
-             // Se não for página de inscrição, garante que o login está visível se não houver app
-             if (params.get('page') !== 'inscricao') {
-                 if (document.getElementById('main-app').classList.contains('hidden')) {
-                     document.getElementById('login-screen').classList.remove('hidden');
+             setTimeout(() => {
+                 const params = new URLSearchParams(window.location.search);
+                 if (params.get('page') !== 'inscricao') {
+                     // Só mostra login se o loading já sumiu E o app não está visível
+                     const loadingHidden = document.getElementById('loading-screen').classList.contains('hidden');
+                     const appHidden = document.getElementById('main-app').classList.contains('hidden');
+                     
+                     if (loadingHidden && appHidden) {
+                         forceShow('login-screen');
+                     }
                  }
-             }
+             }, 500); // 500ms delay
         });
     </script>
 
