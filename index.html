@@ -186,17 +186,27 @@
         
         /* OTIMIZAÇÃO PARA IMPRESSÃO A4 */
         @media print {
-            @page { size: A4 landscape; margin: 1cm; }
+            @page { size: A4 portrait; margin: 0; }
             body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            .print-break-inside-avoid { break-inside: avoid; }
-            table { font-size: 10px; width: 100%; }
-            th, td { padding: 4px 8px !important; }
-            #sidebar, #login-screen { display: none; }
-            #main-app { height: auto; overflow: visible; }
-            #content-area { padding: 0; overflow: visible; }
-            .bg-slate-50 { background-color: white !important; }
+            #sidebar, header, #view-dashboard, #view-inscricoes, #view-atletas, #view-cadastro, #view-relatorios, #view-presenca, .no-print { display: none !important; }
+            #main-app { display: block !important; margin: 0 !important; padding: 0 !important; height: auto !important; overflow: visible !important; }
+            #content-area { margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+            #sumula-print-area { 
+                display: block !important; 
+                width: 210mm !important; 
+                height: 297mm !important; 
+                position: absolute !important; 
+                top: 0 !important; 
+                left: 0 !important; 
+                margin: 0 !important; 
+                padding: 10mm !important; 
+                box-shadow: none !important;
+                border: none !important;
+            }
+            /* Garante que imagens apareçam */
+            img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            table { border-collapse: collapse !important; width: 100% !important; }
+            th, td { border: 1px solid #000 !important; }
         }
     </style>
 </head>
@@ -515,6 +525,9 @@
                 <button onclick="navigate('relatorios')" id="nav-relatorios" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800 hover:text-white mt-1">
                     <i data-lucide="file-bar-chart" class="w-5 h-5"></i> <span class="font-medium">Relatórios</span>
                 </button>
+                <button onclick="navigate('sumula')" id="nav-sumula" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800 hover:text-white mt-1">
+                    <i data-lucide="clipboard-list" class="w-5 h-5"></i> <span class="font-medium">Súmula</span>
+                </button>
                 <!-- Botão Presença REMOVIDO -->
             </div>
             <div class="p-4 border-t border-slate-800">
@@ -578,6 +591,137 @@
                     </div>
 
                     <div id="inscricoes-list" class="space-y-4"></div>
+                </div>
+
+                <!-- SEÇÃO: SÚMULA -->
+                <div id="view-sumula" class="view-section hidden space-y-6">
+                    <div class="no-print">
+                        <h2 class="text-2xl font-black text-slate-900">Relatório de Súmula</h2>
+                        <p class="text-slate-500 text-sm">Gere a súmula oficial para os jogos.</p>
+                    </div>
+
+                    <!-- Configurações da Súmula (Não sai na impressão) -->
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm no-print space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nome do Campeonato</label>
+                                <input type="text" id="sumula-campeonato" placeholder="Ex: LIGA INDEPENDENTE DE FUTSAL..." class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none focus:border-red-500 text-sm font-bold text-slate-700" oninput="saveSumulaConfig()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Categoria</label>
+                                <select id="sumula-categoria" onchange="renderSumulaTable()" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none focus:border-red-500 text-sm font-bold text-slate-700 bg-white">
+                                    <option value="SUB 9">SUB 9</option>
+                                    <option value="SUB 11">SUB 11</option>
+                                    <option value="SUB 13">SUB 13</option>
+                                    <option value="SUB 15">SUB 15</option>
+                                    <option value="SUB 17">SUB 17</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Técnico</label>
+                                <input type="text" id="sumula-tecnico" placeholder="Nome do Técnico" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none focus:border-red-500 text-sm font-bold text-slate-700" oninput="saveSumulaConfig()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Aux. Técnico</label>
+                                <input type="text" id="sumula-auxiliar" placeholder="Nome do Auxiliar" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none focus:border-red-500 text-sm font-bold text-slate-700" oninput="saveSumulaConfig()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Numeração</label>
+                                <select id="sumula-number-type" onchange="renderSumulaTable()" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none focus:border-red-500 text-sm font-bold text-slate-700 bg-white">
+                                    <option value="camisa">Usar Nº da Camisa</option>
+                                    <option value="sequencial">Sequencial (1, 2, 3...)</option>
+                                    <option value="vazio">Em Branco</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 pt-2">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="doc-type" value="rg" checked onchange="renderSumulaTable()" class="accent-red-600 w-4 h-4">
+                                <span class="text-sm font-bold text-slate-700">Usar RG</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="doc-type" value="cpf" onchange="renderSumulaTable()" class="accent-red-600 w-4 h-4">
+                                <span class="text-sm font-bold text-slate-700">Usar CPF</span>
+                            </label>
+                        </div>
+                        <div class="flex gap-3 pt-4 border-t border-slate-100">
+                            <button onclick="window.print()" class="px-6 py-2 bg-slate-900 text-white font-bold rounded-xl text-sm flex items-center gap-2 hover:bg-slate-800 transition-colors">
+                                <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Súmula
+                            </button>
+                            <button onclick="exportSumulaPDF()" class="px-6 py-2 bg-red-600 text-white font-bold rounded-xl text-sm flex items-center gap-2 hover:bg-red-700 transition-colors">
+                                <i data-lucide="file-text" class="w-4 h-4"></i> Gerar PDF
+                            </button>
+                            <button onclick="exportSumulaExcel()" class="px-6 py-2 bg-emerald-600 text-white font-bold rounded-xl text-sm flex items-center gap-2 hover:bg-emerald-700 transition-colors">
+                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Gerar Excel
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Área de Impressão (A4 Simulada) -->
+                    <div id="sumula-print-area" class="bg-white shadow-2xl mx-auto p-[10mm] w-[210mm] min-h-[297mm] relative print:shadow-none print:w-full print:h-full print:p-0 print:m-0">
+                        
+                        <!-- Cabeçalho da Súmula -->
+                        <header class="grid grid-cols-[160px_1fr_160px] gap-4 items-center mb-2 border-b-2 border-slate-900 pb-4">
+                            <div class="w-40 h-40 flex items-center justify-center border border-dashed border-slate-300 rounded-lg overflow-hidden bg-slate-50">
+                                <img id="logo-left" src="logo.png" class="w-full h-full object-contain mix-blend-multiply" onerror="this.style.display='none'">
+                            </div>
+                            <div class="flex-1 text-center px-2">
+                                <h1 id="print-campeonato" class="text-xl md:text-3xl font-black uppercase leading-tight text-slate-900 break-words">NOME DO CAMPEONATO AQUI</h1>
+                            </div>
+                            <div class="w-40 h-40 flex items-center justify-center border border-dashed border-slate-300 rounded-lg overflow-hidden bg-slate-50">
+                                <img id="logo-right" src="logo.png" class="w-full h-full object-contain mix-blend-multiply" onerror="this.style.display='none'">
+                            </div>
+                        </header>
+
+                        <!-- Linha Verde Decorativa -->
+                        <div class="w-full h-1 bg-emerald-600 mb-6 print:bg-black"></div>
+
+                        <h2 class="text-center font-black text-2xl mb-8 uppercase tracking-widest text-slate-900">RELAÇÃO DE ATLETAS</h2>
+
+                        <!-- Dados da Equipe -->
+                        <div class="mb-6 space-y-2 text-sm font-bold uppercase">
+                            <div class="flex gap-2">
+                                <span class="w-32 text-right">Nome da Equipe:</span>
+                                <span class="border-b border-slate-900 flex-1 px-2">MANCHESTER BRASIL</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <span class="w-32 text-right">Categoria:</span>
+                                <span id="print-categoria" class="border-b border-slate-900 flex-1 px-2">SUB 11</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <span class="w-32 text-right">Técnico:</span>
+                                <span id="print-tecnico" class="border-b border-slate-900 flex-1 px-2"></span>
+                            </div>
+                            <div class="flex gap-2">
+                                <span class="w-32 text-right">Aux. Técnico:</span>
+                                <span id="print-auxiliar" class="border-b border-slate-900 flex-1 px-2"></span>
+                            </div>
+                        </div>
+
+                        <!-- Tabela -->
+                        <table class="w-full border-collapse border border-slate-900 text-xs uppercase table-fixed">
+                            <thead>
+                                <tr class="bg-slate-100 print:bg-transparent h-8">
+                                    <th class="border-2 border-slate-900 p-1 w-[8%] text-center">Nº</th>
+                                    <th class="border-2 border-slate-900 p-1 w-[42%] text-left">Nome Completo</th>
+                                    <th class="border-2 border-slate-900 p-1 w-[15%] text-center">Nascimento</th>
+                                    <th class="border-2 border-slate-900 p-1 w-[15%] text-center" id="th-doc">RG</th>
+                                    <th class="border-2 border-slate-900 p-1 w-[20%] text-center">Assinatura</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sumula-tbody">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+
+                        <!-- Rodapé -->
+                        <div class="mt-12 flex justify-end">
+                            <div class="text-center w-64">
+                                <div class="border-t border-slate-900 w-full mb-1"></div>
+                                <p class="text-xs font-bold uppercase">Assinatura Responsável</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- SEÇÃO: LISTAGEM ATLETAS -->
@@ -916,6 +1060,7 @@
                                 <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
                                     <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked onchange="toggleCol('col-cat')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Categoria</span></label>
                                     <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked onchange="toggleCol('col-pos')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Posição</span></label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked onchange="toggleCol('col-num')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Número</span></label>
                                     <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked onchange="toggleCol('col-nasc')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Nascimento</span></label>
                                     <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" onchange="toggleCol('col-doc')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">CPF/RG</span></label>
                                     <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" onchange="toggleCol('col-end')" class="accent-red-600 w-4 h-4 rounded"> <span class="text-xs font-bold text-slate-700">Endereço</span></label>
@@ -943,6 +1088,7 @@
                                         <th class="py-2 px-3 sticky left-0 bg-slate-50 z-10 border-r border-slate-100">Atleta</th>
                                         <th class="py-2 px-3 col-cat">Cat.</th>
                                         <th class="py-2 px-3 col-pos">Posição</th>
+                                        <th class="py-2 px-3 col-num">Nº</th>
                                         <th class="py-2 px-3 col-nasc">Nasc.</th>
                                         <th class="py-2 px-3 col-doc" style="display:none">CPF / RG</th>
                                         <th class="py-2 px-3 col-end" style="display:none">Endereço Completo</th>
@@ -1074,6 +1220,8 @@
                 renderDashboard();
                 renderAtletas();
                 renderInscricoes();
+                loadSumulaConfig(); // Carrega config salva
+                renderSumulaTable(); // Renderiza súmula inicial
             } catch (e) {
                 console.error("Erro ao carregar atletas:", e);
             }
@@ -1878,6 +2026,7 @@
             const cols = [];
             if(document.querySelector('input[onchange="toggleCol(\'col-cat\')"]').checked) cols.push('Categoria');
             if(document.querySelector('input[onchange="toggleCol(\'col-pos\')"]').checked) cols.push('Posição');
+            if(document.querySelector('input[onchange="toggleCol(\'col-num\')"]').checked) cols.push('Número');
             if(document.querySelector('input[onchange="toggleCol(\'col-nasc\')"]').checked) cols.push('Nascimento');
             if(document.querySelector('input[onchange="toggleCol(\'col-doc\')"]').checked) cols.push('Documentos');
             if(document.querySelector('input[onchange="toggleCol(\'col-end\')"]').checked) cols.push('Endereço');
@@ -1893,6 +2042,7 @@
                 const row = { 'Nome': p.nome };
                 if(cols.includes('Categoria')) row['Categoria'] = calcCat(p.nascimento);
                 if(cols.includes('Posição')) row['Posição'] = p.posicao || '';
+                if(cols.includes('Número')) row['Número'] = p.numeroCamisa || '';
                 if(cols.includes('Nascimento')) row['Nascimento'] = p.nascimento.split('-').reverse().join('/');
                 if(cols.includes('Documentos')) row['Documentos'] = `CPF: ${p.cpf||''} RG: ${p.rg||''}`;
                 if(cols.includes('Endereço')) row['Endereço'] = `${p.endereco?.rua||''}, ${p.endereco?.numero||''} - ${p.endereco?.bairro||''} (${p.endereco?.cidade||''})`;
@@ -1935,6 +2085,7 @@
 
             if(chk('col-cat')) head[0].push('Cat.');
             if(chk('col-pos')) head[0].push('Pos.');
+            if(chk('col-num')) head[0].push('Nº');
             if(chk('col-nasc')) head[0].push('Nasc.');
             if(chk('col-doc')) head[0].push('Doc.');
             if(chk('col-end')) head[0].push('Endereço');
@@ -1953,6 +2104,7 @@
                 const row = [p.nome];
                 if(chk('col-cat')) row.push(calcCat(p.nascimento));
                 if(chk('col-pos')) row.push(p.posicao || '-');
+                if(chk('col-num')) row.push(p.numeroCamisa || '-');
                 if(chk('col-nasc')) row.push(p.nascimento ? p.nascimento.split('-').reverse().join('/') : '-');
                 if(chk('col-doc')) row.push(`CPF:${p.cpf||'-'}\nRG:${p.rg||'-'}`);
                 if(chk('col-end')) row.push(p.endereco ? `${p.endereco.rua||''}, ${p.endereco.numero||''}\n${p.endereco.bairro||''}` : '-');
@@ -1977,6 +2129,224 @@
             });
 
             doc.save(`Relatorio_Manchester_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        // ==================== FUNÇÕES DA SÚMULA ====================
+
+        function saveSumulaConfig() {
+            const config = {
+                campeonato: document.getElementById('sumula-campeonato').value,
+                tecnico: document.getElementById('sumula-tecnico').value,
+                auxiliar: document.getElementById('sumula-auxiliar').value
+            };
+            
+            // Salva no localStorage para persistência imediata
+            localStorage.setItem('sumulaConfig', JSON.stringify(config));
+            
+            // Atualiza visualização em tempo real
+            document.getElementById('print-campeonato').innerText = config.campeonato || 'NOME DO CAMPEONATO AQUI';
+            document.getElementById('print-tecnico').innerText = config.tecnico || '';
+            document.getElementById('print-auxiliar').innerText = config.auxiliar || '';
+
+            // Tenta salvar no Firebase se possível (Debounce simples)
+            if(window.sumulaTimeout) clearTimeout(window.sumulaTimeout);
+            window.sumulaTimeout = setTimeout(() => {
+                if (window.firebaseDb) {
+                    // Salvar em coleção de configurações (Exemplo simplificado)
+                    // window.setDoc(window.doc(window.firebaseDb, "config", "sumula"), config);
+                    console.log('Configuração salva localmente');
+                }
+            }, 1000);
+        }
+
+        function loadSumulaConfig() {
+            const saved = localStorage.getItem('sumulaConfig');
+            if (saved) {
+                const config = JSON.parse(saved);
+                document.getElementById('sumula-campeonato').value = config.campeonato || '';
+                document.getElementById('sumula-tecnico').value = config.tecnico || '';
+                document.getElementById('sumula-auxiliar').value = config.auxiliar || '';
+                
+                // Atualiza visualização
+                document.getElementById('print-campeonato').innerText = config.campeonato || 'NOME DO CAMPEONATO AQUI';
+                document.getElementById('print-tecnico').innerText = config.tecnico || '';
+                document.getElementById('print-auxiliar').innerText = config.auxiliar || '';
+            }
+        }
+
+        function renderSumulaTable() {
+            const cat = document.getElementById('sumula-categoria').value;
+            const docType = document.querySelector('input[name="doc-type"]:checked').value;
+            const numType = document.getElementById('sumula-number-type').value;
+            
+            document.getElementById('print-categoria').innerText = cat;
+            document.getElementById('th-doc').innerText = docType === 'rg' ? 'RG' : 'CPF';
+
+            const filtered = players.filter(p => calcCat(p.nascimento) === cat).sort((a,b) => a.nome.localeCompare(b.nome));
+            
+            const tbody = document.getElementById('sumula-tbody');
+            tbody.innerHTML = '';
+
+            // Gera linhas (mínimo 15 para preencher a folha)
+            const rowsToRender = Math.max(filtered.length, 15);
+
+            for(let i=0; i < rowsToRender; i++) {
+                const p = filtered[i];
+                const tr = document.createElement('tr');
+                tr.className = "h-10 border-b border-slate-900"; // Altura da linha ajustada
+                
+                let numero = '';
+                if (p) {
+                    if (numType === 'camisa') numero = p.numeroCamisa || '';
+                    else if (numType === 'sequencial') numero = (i + 1).toString();
+                    // 'vazio' deixa em branco
+                }
+
+                if (p) {
+                    tr.innerHTML = `
+                        <td class="border-2 border-slate-900 text-center font-bold text-sm">${numero}</td>
+                        <td class="border-2 border-slate-900 px-2 font-bold text-sm whitespace-nowrap overflow-hidden text-ellipsis">${p.nome}</td>
+                        <td class="border-2 border-slate-900 text-center text-sm">${p.nascimento ? p.nascimento.split('-').reverse().join('/') : ''}</td>
+                        <td class="border-2 border-slate-900 text-center text-sm">${docType === 'rg' ? (p.rg || '') : (p.cpf || '')}</td>
+                        <td class="border-2 border-slate-900"></td>
+                    `;
+                } else {
+                    // Linha vazia para preenchimento manual
+                    let numVazio = '';
+                    if (numType === 'sequencial') numVazio = (i + 1).toString();
+
+                    tr.innerHTML = `
+                        <td class="border-2 border-slate-900 text-center font-bold text-sm">${numVazio}</td>
+                        <td class="border-2 border-slate-900"></td>
+                        <td class="border-2 border-slate-900"></td>
+                        <td class="border-2 border-slate-900"></td>
+                        <td class="border-2 border-slate-900"></td>
+                    `;
+                }
+                tbody.appendChild(tr);
+            }
+        }
+
+        function exportSumulaPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4'); // Retrato
+            
+            const campeonato = document.getElementById('sumula-campeonato').value || 'CAMPEONATO';
+            const cat = document.getElementById('sumula-categoria').value;
+            const tecnico = document.getElementById('sumula-tecnico').value;
+            const auxiliar = document.getElementById('sumula-auxiliar').value;
+            const docType = document.querySelector('input[name="doc-type"]:checked').value;
+            const numType = document.getElementById('sumula-number-type').value;
+
+            // Cabeçalho
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.text(campeonato.toUpperCase(), 105, 20, { align: 'center' });
+            
+            doc.setLineWidth(0.5);
+            doc.line(10, 25, 200, 25);
+            
+            doc.setFontSize(16);
+            doc.text("RELAÇÃO DE ATLETAS", 105, 35, { align: 'center' });
+
+            // Dados da Equipe
+            doc.setFontSize(10);
+            doc.text(`Equipe: MANCHESTER BRASIL`, 14, 45);
+            doc.text(`Categoria: ${cat}`, 14, 50);
+            doc.text(`Técnico: ${tecnico}`, 14, 55);
+            doc.text(`Aux. Técnico: ${auxiliar}`, 14, 60);
+
+            // Tabela
+            const filtered = players.filter(p => calcCat(p.nascimento) === cat).sort((a,b) => a.nome.localeCompare(b.nome));
+            
+            const body = [];
+            const rowsToRender = Math.max(filtered.length, 15);
+
+            for(let i=0; i < rowsToRender; i++) {
+                const p = filtered[i];
+                let numero = '';
+                
+                if (numType === 'camisa' && p) numero = p.numeroCamisa || '';
+                else if (numType === 'sequencial') numero = (i + 1).toString();
+                // vazio fica vazio
+
+                if (p) {
+                    body.push([
+                        numero,
+                        p.nome,
+                        p.nascimento ? p.nascimento.split('-').reverse().join('/') : '',
+                        docType === 'rg' ? (p.rg || '') : (p.cpf || ''),
+                        ''
+                    ]);
+                } else {
+                    body.push([numero, '', '', '', '']);
+                }
+            }
+
+            doc.autoTable({
+                head: [['Nº', 'Nome Completo', 'Nasc.', docType.toUpperCase(), 'Assinatura']],
+                body: body,
+                startY: 65,
+                theme: 'grid',
+                styles: { fontSize: 10, cellPadding: 2, valign: 'middle', lineColor: [0, 0, 0], lineWidth: 0.1 },
+                headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+                columnStyles: {
+                    0: { cellWidth: 10, halign: 'center' },
+                    1: { cellWidth: 'auto' },
+                    2: { cellWidth: 25, halign: 'center' },
+                    3: { cellWidth: 30, halign: 'center' },
+                    4: { cellWidth: 50 }
+                }
+            });
+
+            // Assinatura Rodapé
+            const finalY = doc.lastAutoTable.finalY + 30;
+            doc.line(120, finalY, 190, finalY);
+            doc.setFontSize(8);
+            doc.text("Assinatura Responsável", 155, finalY + 5, { align: 'center' });
+
+            doc.save(`Sumula_${cat}_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        function exportSumulaExcel() {
+            const cat = document.getElementById('sumula-categoria').value;
+            const filtered = players.filter(p => calcCat(p.nascimento) === cat).sort((a,b) => a.nome.localeCompare(b.nome));
+            const docType = document.querySelector('input[name="doc-type"]:checked').value;
+            const numType = document.getElementById('sumula-number-type').value;
+
+            const data = [];
+            const rowsToRender = Math.max(filtered.length, 15);
+
+            for(let i=0; i < rowsToRender; i++) {
+                const p = filtered[i];
+                let numero = '';
+                
+                if (numType === 'camisa' && p) numero = p.numeroCamisa || '';
+                else if (numType === 'sequencial') numero = (i + 1).toString();
+
+                if (p) {
+                    data.push({
+                        'Nº': numero,
+                        'Nome Completo': p.nome,
+                        'Nascimento': p.nascimento ? p.nascimento.split('-').reverse().join('/') : '',
+                        [docType.toUpperCase()]: docType === 'rg' ? (p.rg || '') : (p.cpf || ''),
+                        'Assinatura': ''
+                    });
+                } else {
+                    data.push({
+                        'Nº': numero,
+                        'Nome Completo': '',
+                        'Nascimento': '',
+                        [docType.toUpperCase()]: '',
+                        'Assinatura': ''
+                    });
+                }
+            }
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Súmula");
+            XLSX.writeFile(wb, `Sumula_${cat}.xlsx`);
         }
 
         const updateVH = window.updateVH; // Usa a global já definida

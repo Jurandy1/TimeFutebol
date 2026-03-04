@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relação de Atletas - LIFCPP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos personalizados para impressão e ajustes finos */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+                background-color: white;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .page-container {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 15mm !important;
+                width: 100% !important;
+                height: 100% !important;
+                max-width: none !important;
+            }
+            /* Esconde as bordas dos inputs na impressão para parecer texto corrido caso preenchido, 
+               mas mantém a linha de baixo para os campos de cabeçalho */
+            .table-input {
+                background: transparent !important;
+            }
+        }
+
+        /* Estilos para os inputs se comportarem como texto nas células */
+        .table-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            background-color: transparent;
+            padding: 4px 8px;
+            box-sizing: border-box;
+            font-size: 0.875rem; /* text-sm */
+        }
+        
+        .table-input:focus {
+            background-color: #f3f4f6; /* gray-100 para destacar quando editando */
+        }
+
+        /* Tabela: forçar bordas pretas fortes */
+        table, th, td {
+            border: 1px solid black;
+        }
+        
+        /* Fonte serifada para o subtítulo para combinar com a imagem */
+        .font-serif-custom {
+            font-family: "Times New Roman", Times, serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-200 min-h-screen py-8 flex justify-center font-sans text-black print:py-0">
+
+    <!-- Container Principal (Página A4 simulada) -->
+    <div class="page-container bg-white shadow-2xl relative w-[210mm] min-h-[297mm] px-[15mm] py-[15mm] box-border">
+
+        <!-- Cabeçalho -->
+        <header class="flex justify-between items-center mb-2">
+            
+            <!-- Logo Esquerda -->
+            <div class="w-24 h-28 relative flex items-center justify-center border border-dashed border-gray-400">
+                <span class="text-gray-400 text-sm font-semibold text-center">a logo<br>aqui</span>
+            </div>
+
+            <!-- Título Central -->
+            <div class="text-center flex-1 px-4">
+                <h1 class="text-lg md:text-xl font-bold leading-tight">
+                    LIGA INDEPENDENTE DE FUTSAL<br>
+                    CANTAGALO, PAVÃO E PAVÃOZINHO
+                </h1>
+            </div>
+
+            <!-- Logo Direita -->
+            <div class="w-24 h-28 relative flex items-center justify-center border border-dashed border-gray-400">
+                <span class="text-gray-400 text-sm font-semibold text-center">a logo<br>aqui</span>
+            </div>
+
+        </header>
+
+        <!-- Linha Verde Separadora -->
+        <div class="w-full h-[3px] bg-[#1a7a3a] mb-6"></div>
+
+        <!-- Subtítulo -->
+        <h2 class="text-center font-bold text-xl md:text-2xl mb-8 font-serif-custom tracking-wide">
+            RELAÇÃO DE ATLETAS
+        </h2>
+
+        <!-- Formulário Cabeçalho da Equipe -->
+        <div class="mb-6 px-2">
+            <!-- Linha 1 -->
+            <div class="flex flex-col md:flex-row gap-4 mb-3">
+                <div class="flex flex-1 items-end">
+                    <label class="font-bold text-base whitespace-nowrap mr-2 pb-1">Nome da Equipe :</label>
+                    <input type="text" class="flex-1 border-b-[1px] border-black outline-none bg-transparent px-2 pb-0 text-base">
+                </div>
+                <div class="flex w-full md:w-[35%] items-end">
+                    <label class="font-bold text-base whitespace-nowrap mr-2 pb-1">Categoria :</label>
+                    <input type="text" class="flex-1 border-b-[1px] border-black outline-none bg-transparent px-2 pb-0 text-base">
+                </div>
+            </div>
+            <!-- Linha 2 -->
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex flex-1 items-end">
+                    <label class="font-bold text-base whitespace-nowrap mr-2 pb-1">Técnico :</label>
+                    <input type="text" class="flex-1 border-b-[1px] border-black outline-none bg-transparent px-2 pb-0 text-base">
+                </div>
+                <div class="flex w-full md:w-[45%] items-end">
+                    <label class="font-bold text-base whitespace-nowrap mr-2 pb-1">Aux. Técnico:</label>
+                    <input type="text" class="flex-1 border-b-[1px] border-black outline-none bg-transparent px-2 pb-0 text-base">
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela de Atletas -->
+        <div class="w-full overflow-x-auto px-4 md:px-12 mb-12">
+            <table class="w-full border-collapse border border-black bg-white">
+                <thead>
+                    <tr>
+                        <th class="w-[5%] border border-black p-1"></th>
+                        <th class="w-[45%] border border-black p-2 font-bold text-center text-[15px] font-serif-custom">Nome Completo</th>
+                        <th class="w-[15%] border border-black p-2 font-bold text-center text-[15px] font-serif-custom">Data de Nasc.</th>
+                        <th class="w-[15%] border border-black p-2 font-bold text-center text-[15px] font-serif-custom">R.G</th>
+                        <th class="w-[20%] border border-black p-2 font-bold text-center text-[15px] font-serif-custom">Assinatura</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <!-- Linhas geradas via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Rodapé / Assinatura -->
+        <div class="flex justify-end px-4 md:px-12 mt-16 pb-8">
+            <div class="w-full max-w-xs text-center">
+                <div class="border-t-[2px] border-black w-full mb-1"></div>
+                <p class="font-bold text-base">Assinatura Responsável Equipe</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Script para gerar as 15 linhas automaticamente e manter o HTML limpo -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tbody = document.getElementById('table-body');
+            const numRows = 15;
+
+            for (let i = 1; i <= numRows; i++) {
+                const tr = document.createElement('tr');
+                tr.className = "h-[30px]"; // Define uma altura fixa para as linhas
+                
+                tr.innerHTML = `
+                    <td class="border border-black text-center font-bold text-sm select-none">${i}</td>
+                    <td class="border border-black p-0"><input type="text" class="table-input" /></td>
+                    <td class="border border-black p-0"><input type="text" class="table-input text-center" /></td>
+                    <td class="border border-black p-0"><input type="text" class="table-input text-center" /></td>
+                    <td class="border border-black p-0"><input type="text" class="table-input" /></td>
+                `;
+                tbody.appendChild(tr);
+            }
+        });
+    </script>
+
+</body>
+</html>
