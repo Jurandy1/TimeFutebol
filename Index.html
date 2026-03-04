@@ -76,41 +76,50 @@
         }
 
         // Monitorar estado da autenticação
+        let authInitialized = false;
+
         if(auth) {
             onAuthStateChanged(auth, (user) => {
+                authInitialized = true;
+                
+                // Esconde o loading de forma segura
                 const loader = document.getElementById('loading-screen');
-                if (loader) loader.classList.add('hidden'); // Oculta o loading
+                if (loader) {
+                    loader.classList.add('hidden');
+                    loader.style.display = 'none';
+                }
+
+                const params = new URLSearchParams(window.location.search);
 
                 if (user) {
-                    console.log("Usuário logado:", user.email);
+                    console.log("✅ Usuário logado:", user.email);
                     document.getElementById('login-screen').classList.add('hidden');
                     document.getElementById('main-app').classList.remove('hidden');
+                    document.getElementById('public-inscricao').classList.add('hidden');
+                    
                     window.updateVH();
                     
-                    // Verifica URL para redirecionamento direto (ex: link de inscrição)
-                    const params = new URLSearchParams(window.location.search);
                     if (params.get('page') === 'inscricao') {
-                        document.getElementById('login-screen').classList.add('hidden');
-                        document.getElementById('main-app').classList.add('hidden');
                         document.getElementById('public-inscricao').classList.remove('hidden');
                         document.getElementById('public-inscricao').style.display = 'flex';
                     } else {
-                        // Bug 1: Delay de 50ms para garantir carregamento de funções
+                        // Delay mínimo para garantir que o DOM está 100% pronto
                         setTimeout(() => {
                             navigate('dashboard');
-                            window.loadPlayersFromFirebase(); 
-                        }, 50);
+                            if (typeof window.loadPlayersFromFirebase === 'function') {
+                                window.loadPlayersFromFirebase(); 
+                            }
+                        }, 100);
                     }
                 } else {
                     console.log("Nenhum usuário logado");
-                    // Se estiver na página pública de inscrição, não pede login
-                    const params = new URLSearchParams(window.location.search);
+                    document.getElementById('main-app').classList.add('hidden');
+                    
                     if (params.get('page') === 'inscricao') {
-                        document.getElementById('login-screen').classList.add('hidden');
                         document.getElementById('public-inscricao').classList.remove('hidden');
+                        document.getElementById('public-inscricao').style.display = 'flex';
                     } else {
                         document.getElementById('login-screen').classList.remove('hidden');
-                        document.getElementById('main-app').classList.add('hidden');
                     }
                 }
             });
@@ -157,84 +166,20 @@
             Demorando muito? Toque aqui para entrar
         </button>
     </div>
-    
-    <script>
-        // Função auxiliar para forçar visibilidade (Bug 3)
-        function forceShow(id) {
-            const el = document.getElementById(id);
-            if(el) {
-                el.classList.remove('hidden');
-                el.style.display = 'block'; // ou flex, dependendo do elemento, mas block resolve a maioria
-                if(id === 'main-app') el.style.display = 'flex'; // main-app usa flex
-                if(id === 'public-inscricao') el.style.display = 'flex'; // public-inscricao usa flex
-            }
-        }
-        function forceHide(id) {
-            const el = document.getElementById(id);
-            if(el) {
-                el.classList.add('hidden');
-                el.style.display = 'none';
-            }
-        }
 
-        // Bug 2: Botão manual agora garante exibição
+    <script>
+        // Botão manual de emergência (só funciona se o Firebase realmente travar)
         document.getElementById('btn-manual-entry').onclick = () => {
-            forceHide('loading-screen');
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('page') === 'inscricao') {
-                forceShow('public-inscricao');
-                forceHide('login-screen');
-            } else {
-                // Se já tem app visível, ok. Se não, mostra login.
-                if (document.getElementById('main-app').classList.contains('hidden')) {
-                    forceShow('login-screen');
+            if (typeof authInitialized === 'undefined' || !authInitialized) {
+                console.warn('🚨 Entrada manual ativada');
+                const loader = document.getElementById('loading-screen');
+                if (loader) {
+                    loader.classList.add('hidden');
+                    loader.style.display = 'none';
                 }
+                document.getElementById('login-screen').classList.remove('hidden');
             }
         };
-
-        // Fallback 1 (3s)
-        setTimeout(() => {
-            const l = document.getElementById('loading-screen');
-            if (l && !l.classList.contains('hidden')) {
-                console.warn('Loading timeout (3s) - Tentando liberar');
-                // Não esconde direto, deixa o usuário ou o 2º fallback agir, ou se o firebase responder logo
-                // Mas se quiser forçar:
-                // forceHide('loading-screen'); 
-                // forceShow('login-screen'); 
-                // (Mantendo comportamento original de apenas liberar se travado)
-                document.getElementById('btn-manual-entry').click(); // Simula clique para resolver
-            }
-        }, 3000);
-
-        // Bug 5: Segundo fallback incondicional (8s)
-        setTimeout(() => {
-            const l = document.getElementById('loading-screen');
-            if (l && l.style.display !== 'none') {
-                console.error('Critical timeout (8s) - Forçando entrada total');
-                forceHide('loading-screen');
-                if (document.getElementById('main-app').classList.contains('hidden')) {
-                    forceShow('login-screen');
-                }
-            }
-        }, 8000);
-    </script>
-    
-    <script>
-        // Bug 4: window.load com delay e verificação
-        window.addEventListener('load', () => {
-             setTimeout(() => {
-                 const params = new URLSearchParams(window.location.search);
-                 if (params.get('page') !== 'inscricao') {
-                     // Só mostra login se o loading já sumiu E o app não está visível
-                     const loadingHidden = document.getElementById('loading-screen').classList.contains('hidden');
-                     const appHidden = document.getElementById('main-app').classList.contains('hidden');
-                     
-                     if (loadingHidden && appHidden) {
-                         forceShow('login-screen');
-                     }
-                 }
-             }, 500); // 500ms delay
-        });
     </script>
 
     <!-- TELA PÚBLICA DE INSCRIÇÃO (SEM LOGIN) -->
