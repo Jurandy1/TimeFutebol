@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MANCHESTER BRASIL | Gestão de Academia</title>
     
     <!-- Tratamento de Erro Global -->
@@ -155,7 +155,7 @@
         .card-player:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
         .view-section { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .h-screen-safe { height: 100vh; height: calc(var(--vh, 1vh) * 100); }
+        /* .h-screen-safe { height: 100vh; height: calc(var(--vh, 1vh) * 100); } REMOVIDO PARA EVITAR PROBLEMAS */
         
         /* OTIMIZAÇÃO PARA IMPRESSÃO A4 */
         @media print {
@@ -433,7 +433,7 @@
     </div>
 
     <!-- ESTRUTURA PRINCIPAL -->
-    <div id="main-app" class="hidden h-screen-safe flex flex-col md:flex-row w-full">
+    <div id="main-app" class="hidden min-h-screen w-full flex flex-col md:flex-row bg-[#f8fafc]">
         
         <!-- SIDEBAR DESKTOP -->
         <aside id="sidebar" class="flex flex-col w-72 bg-slate-900 text-slate-300 flex-shrink-0 z-50 transition-all relative no-print h-full
