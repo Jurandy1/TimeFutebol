@@ -7,7 +7,28 @@
     
     <!-- Tratamento de Erro Global -->
     <script>
+        // Solução 3: Detectar navegadores in-app (WhatsApp/Instagram)
+        const ua = navigator.userAgent || navigator.vendor || window.opera;
+        const isInApp = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1) || (ua.indexOf("WhatsApp") > -1);
+        
+        if (isInApp) {
+            const warning = document.createElement('div');
+            warning.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:99999;color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;';
+            warning.innerHTML = `
+                <div style="font-size:40px;margin-bottom:20px;">⚠️</div>
+                <h2 style="font-size:20px;font-weight:bold;margin-bottom:10px;">Navegador não suportado</h2>
+                <p style="font-size:16px;line-height:1.5;">O navegador do Instagram/WhatsApp não é compatível com este sistema.</p>
+                <p style="font-size:16px;font-weight:bold;margin-top:20px;color:#fbbf24;">Toque nos 3 pontinhos (⋮) e escolha "Abrir no navegador" ou "Abrir no Chrome".</p>
+            `;
+            document.body.appendChild(warning);
+        }
+
         window.onerror = function(msg, url, line, col, error) {
+            // Solução 2: Ignorar erros não críticos e focar em problemas de rede
+            if (msg.includes('Script error') || msg.includes('fail') || msg.includes('Network')) {
+                console.error('Possível bloqueio de rede detectado:', msg);
+                // Opcional: Mostrar aviso discreto se falhar scripts críticos
+            }
             const errorBox = document.createElement('div');
             errorBox.style.position = 'fixed';
             errorBox.style.top = '0';
@@ -176,7 +197,7 @@
 <body class="bg-[#f8fafc] text-slate-900 overflow-y-auto overflow-x-hidden">
 
     <!-- TELA DE LOADING (nova) -->
-    <div id="loading-screen" class="fixed inset-0 bg-[#f8fafc] flex flex-col items-center justify-center z-[200]">
+    <div id="loading-screen" class="fixed inset-0 bg-[#f8fafc] flex flex-col items-center justify-center z-[200]" style="min-height: 100vh;">
         <div class="w-12 h-12 border-4 border-red-700 border-t-transparent rounded-full animate-spin mb-4"></div>
         <p class="text-slate-500 text-sm font-medium">Carregando...</p>
         <button id="btn-manual-entry" class="mt-8 px-4 py-2 text-xs text-red-500 underline">
@@ -185,6 +206,29 @@
     </div>
 
     <script>
+        // Solução 1: Timeout de Segurança (7 segundos)
+        setTimeout(() => {
+            const loader = document.getElementById('loading-screen');
+            const login = document.getElementById('login-screen');
+            const app = document.getElementById('main-app');
+            const publicInsc = document.getElementById('public-inscricao');
+            
+            // Só executa se o loading ainda estiver visível
+            if (loader && !loader.classList.contains('hidden') && loader.style.display !== 'none') {
+                console.warn('⚠️ Timeout de segurança ativado (7s)');
+                loader.classList.add('hidden');
+                loader.style.display = 'none';
+                
+                // Se nenhum outro conteúdo estiver visível, mostra o login
+                const isAppVisible = app && (!app.classList.contains('hidden') && app.style.display !== 'none');
+                const isPublicVisible = publicInsc && (!publicInsc.classList.contains('hidden') && publicInsc.style.display !== 'none');
+                
+                if (!isAppVisible && !isPublicVisible) {
+                    if (login) login.classList.remove('hidden');
+                }
+            }
+        }, 7000);
+
         // Botão manual de emergência (só funciona se o Firebase realmente travar)
         document.getElementById('btn-manual-entry').onclick = () => {
             if (typeof authInitialized === 'undefined' || !authInitialized) {
@@ -393,7 +437,7 @@
     </div>
 
     <!-- TELA DE LOGIN -->
-    <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 px-4">
+    <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 px-4" style="min-height: 100vh;">
         <div class="absolute inset-0 z-0">
             <img src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1920&q=80" class="w-full h-full object-cover opacity-20" alt="Estádio">
             <div class="absolute inset-0 bg-gradient-to-t from-[#DA291C]/90 via-slate-900/80 to-transparent"></div>
