@@ -127,27 +127,33 @@
 
                 if (user) {
                     console.log("✅ Usuário logado:", user.email);
-                    document.getElementById('login-screen').classList.add('hidden');
-                    document.getElementById('main-app').classList.remove('hidden');
-                    document.getElementById('public-inscricao').classList.add('hidden');
                     
-                    window.updateVH();
+                    const params = new URLSearchParams(window.location.search);
                     
                     if (params.get('page') === 'inscricao') {
+                        // Modo Inscrição (mesmo logado)
+                        document.getElementById('login-screen').classList.add('hidden');
+                        document.getElementById('main-app').classList.add('hidden'); // Garante que o app principal suma
                         document.getElementById('public-inscricao').classList.remove('hidden');
                         document.getElementById('public-inscricao').style.display = 'flex';
                     } else {
-                    // Tenta navegar imediatamente
-                    if (typeof window.navigate === 'function') {
-                        navigate('dashboard');
-                        if (typeof window.loadPlayersFromFirebase === 'function') window.loadPlayersFromFirebase();
-                    } else {
-                        // Fallback se o script principal ainda não carregou (raro agora)
-                        setTimeout(() => {
-                            if (typeof window.navigate === 'function') navigate('dashboard');
+                        // Modo Sistema Normal
+                        document.getElementById('login-screen').classList.add('hidden');
+                        document.getElementById('public-inscricao').classList.add('hidden');
+                        document.getElementById('main-app').classList.remove('hidden');
+                        
+                        window.updateVH();
+                        
+                        // Tenta navegar imediatamente
+                        if (typeof window.navigate === 'function') {
+                            navigate('dashboard');
                             if (typeof window.loadPlayersFromFirebase === 'function') window.loadPlayersFromFirebase();
-                        }, 500);
-                    }
+                        } else {
+                            setTimeout(() => {
+                                if (typeof window.navigate === 'function') navigate('dashboard');
+                                if (typeof window.loadPlayersFromFirebase === 'function') window.loadPlayersFromFirebase();
+                            }, 500);
+                        }
                     }
                 } else {
                     console.log("Nenhum usuário logado");
