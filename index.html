@@ -544,7 +544,7 @@
                 </div>
             </header>
 
-            <main id="content-area" class="flex-1 overflow-y-auto bg-[#f8fafc] p-4 sm:p-8">
+            <main id="content-area" class="flex-1 overflow-y-auto bg-[#f8fafc] p-4 sm:p-6 lg:p-8">
                 
                 <!-- SEÇÃO: DASHBOARD -->
                 <div id="view-dashboard" class="view-section space-y-8"></div>
@@ -997,8 +997,8 @@
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <div id="modal-content" class="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50"></div>
-            <div class="p-4 border-t border-slate-100 bg-white flex justify-between gap-3 flex-shrink-0">
+            <div id="modal-content" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-slate-50"></div>
+            <div class="p-4 sm:p-6 border-t border-slate-200 bg-white flex justify-end gap-3 flex-shrink-0">
                 <div class="flex gap-2">
                      <button id="btn-edit-player" class="px-4 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-xl text-sm flex items-center gap-2 transition-colors">
                         <i data-lucide="edit-2" class="w-4 h-4"></i> Editar
@@ -1265,27 +1265,27 @@
             const comCirurgia = players.filter(p => p.saude?.cirurgias && p.saude.cirurgias !== 'Nenhuma').length;
 
             let html = `
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
                         <div class="w-14 h-14 bg-[#DA291C] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-500/20"><i data-lucide="users"></i></div>
                         <div><p class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Total Elenco</p><h3 class="text-3xl font-black text-slate-900 leading-none mt-1">${total}</h3></div>
                     </div>
-                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
                         <div class="w-14 h-14 bg-yellow-400 rounded-2xl flex items-center justify-center text-red-900 shadow-lg shadow-yellow-500/20"><i data-lucide="check-circle"></i></div>
                         <div><p class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Atletas Ativos</p><h3 class="text-3xl font-black text-slate-900 leading-none mt-1">${ativos}</h3></div>
                     </div>
-                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
                         <div class="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-slate-500/20"><i data-lucide="alert-triangle"></i></div>
                         <div><p class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Afastados</p><h3 class="text-3xl font-black text-slate-900 leading-none mt-1">${afastados}</h3></div>
                     </div>
                     <!-- MOBILE: Esconde Hist. Cirurgia para economizar espaço -->
-                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 hidden sm:flex">
+                    <div class="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 hidden sm:flex">
                         <div class="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center text-red-600 shadow-lg shadow-red-500/20"><i data-lucide="stethoscope"></i></div>
                         <div><p class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Hist. Cirurgia</p><h3 class="text-3xl font-black text-slate-900 leading-none mt-1">${comCirurgia}</h3></div>
                     </div>
                 </div>
 
-                <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm">
                     <h3 class="font-black text-slate-800 text-lg mb-6">Ocupação por Categoria</h3>
                     <div class="grid grid-cols-2 sm:grid-cols-5 gap-6">
                         ${cats.map(c => {
