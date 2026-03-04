@@ -33,6 +33,19 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+    <!-- FUNÇÕES GLOBAIS CRÍTICAS (DEFINIDAS ANTES DO FIREBASE) -->
+    <script>
+        window.updateVH = () => {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        };
+        
+        // Define navigate e loadPlayers como placeholders se ainda não existirem
+        if (!window.navigate) window.navigate = (page) => console.log('Navegando para:', page);
+        if (!window.loadPlayersFromFirebase) window.loadPlayersFromFirebase = () => console.log('Carregando players...');
+    </script>
+
     <!-- FIREBASE SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -103,13 +116,17 @@
                         document.getElementById('public-inscricao').classList.remove('hidden');
                         document.getElementById('public-inscricao').style.display = 'flex';
                     } else {
-                        // Delay mínimo para garantir que o DOM está 100% pronto
+                    // Tenta navegar imediatamente
+                    if (typeof window.navigate === 'function') {
+                        navigate('dashboard');
+                        if (typeof window.loadPlayersFromFirebase === 'function') window.loadPlayersFromFirebase();
+                    } else {
+                        // Fallback se o script principal ainda não carregou (raro agora)
                         setTimeout(() => {
-                            navigate('dashboard');
-                            if (typeof window.loadPlayersFromFirebase === 'function') {
-                                window.loadPlayersFromFirebase(); 
-                            }
-                        }, 100);
+                            if (typeof window.navigate === 'function') navigate('dashboard');
+                            if (typeof window.loadPlayersFromFirebase === 'function') window.loadPlayersFromFirebase();
+                        }, 500);
+                    }
                     }
                 } else {
                     console.log("Nenhum usuário logado");
@@ -1912,13 +1929,8 @@
             doc.save(`Relatorio_Manchester_${new Date().toISOString().split('T')[0]}.pdf`);
         }
 
-        const updateVH = () => {
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-            let vh = window.innerHeight * 0.01;
-            document.documentElement.style.setProperty('--vh', `${vh}px`);
-        };
-        window.updateVH = updateVH; 
-
+        const updateVH = window.updateVH; // Usa a global já definida
+        
         // Inicialização e Safe Icons
         function safeCreateIcons() {
             if (typeof lucide !== 'undefined') lucide.createIcons();
